@@ -1,0 +1,40 @@
+# CODEOWNERS — required reviewers for protected paths.
+#
+# How GitHub uses this:
+#   - When a PR modifies a path matched here, the listed owner is
+#     auto-added as a reviewer.
+#   - Branch protection on `main` requires at least one CODEOWNERS review
+#     before merge (configured in repo Settings → Branch protection rules).
+#
+# Format: <path-pattern>   <github-username>...
+# Last matching pattern wins, so put broad rules first and narrow overrides
+# below.
+#
+# Refs: AIR0004
+
+# Default — everything not matched below.
+*                                @mshanawaz114
+
+# Foundations (security-critical, never touched casually).
+/.github/                         @mshanawaz114
+/.github/workflows/               @mshanawaz114
+/.gitleaks.toml                   @mshanawaz114
+/.pre-commit-config.yaml          @mshanawaz114
+/SECURITY.md                      @mshanawaz114
+/CODEOWNERS                       @mshanawaz114
+/scripts/                         @mshanawaz114
+
+# Persistent memory / planning artefacts.
+/memory.md                        @mshanawaz114
+/PLAN.md                          @mshanawaz114
+/AGENTS.md                        @mshanawaz114
+/docs/adr/                        @mshanawaz114
+
+# Authentication and tenancy isolation — every change needs a maintainer
+# eyeball because a regression here is a P0 cross-tenant data leak.
+/apps/api/Aireq.Api/Auth/                            @mshanawaz114
+/apps/api/Aireq.Api/Data/AireqDbContext.cs           @mshanawaz114
+/tests/Aireq.Api.Tests/Tenancy/                      @mshanawaz114
+
+# Infra-as-code.
+/infra/                           @mshanawaz114

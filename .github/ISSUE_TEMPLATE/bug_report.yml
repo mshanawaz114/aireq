@@ -1,0 +1,75 @@
+name: Bug report
+description: Something works incorrectly or differently from how it's documented.
+title: "[bug] "
+labels: ["bug", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug. The more reproducible info you give us, the faster we can land a fix.
+        **Security issues do NOT belong here** — see [SECURITY.md](../SECURITY.md).
+
+  - type: input
+    id: version
+    attributes:
+      label: Aireq version / commit
+      description: Output of `git rev-parse --short HEAD` if running locally, or the build SHA shown in the dashboard footer.
+      placeholder: "ee42450 (or 'main', 'v0.1.0')"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: surface
+    attributes:
+      label: Which surface?
+      multiple: true
+      options:
+        - Web app (dashboard)
+        - Landing / marketing
+        - API (REST)
+        - Worker (background jobs / Playwright)
+        - CLI / scripts
+        - Docs
+    validations:
+      required: true
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: A clear, concise description of the bug.
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect to happen?
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Reproduction steps
+      description: Numbered steps. If reproducible in a test, paste it here.
+      placeholder: |
+        1. ...
+        2. ...
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs / screenshots
+      description: Stack traces, console output, screenshots. Redact tokens.
+      render: shell
+
+  - type: input
+    id: env
+    attributes:
+      label: Environment
+      description: OS, browser, Node / .NET versions if relevant.
+      placeholder: "macOS 15.3, Chrome 124, Node 22, .NET 10.0.100"

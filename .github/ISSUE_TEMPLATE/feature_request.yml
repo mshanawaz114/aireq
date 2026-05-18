@@ -1,0 +1,56 @@
+name: Feature request
+description: Propose a new capability, story, or change of scope.
+title: "[feature] "
+labels: ["enhancement", "needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Aireq tracks every change as a Story in `PLAN.md`. If this gets accepted, we'll assign it a Story ID and ask you (or a maintainer) to open the PR.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What's the user-visible pain or missed opportunity?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed
+    attributes:
+      label: Proposed solution
+      description: What you'd build, and roughly how.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: At least one — even "do nothing" is a valid alternative to compare against.
+
+  - type: dropdown
+    id: phase
+    attributes:
+      label: Which phase does this belong to?
+      options:
+        - "Phase 1 — MVP"
+        - "Phase 2 — Multi-user GA"
+        - "Phase 3 — Scale & moat"
+        - "Cross-cutting (AIRX-*)"
+        - "Not sure"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: impact
+    attributes:
+      label: Impact if we ship this
+      options:
+        - "Critical — unblocks revenue / fixes a major UX gap"
+        - "High — measurable user-facing win"
+        - "Medium — nice quality-of-life improvement"
+        - "Low — polish / future-proofing"
+    validations:
+      required: true
