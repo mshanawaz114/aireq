@@ -1,0 +1,120 @@
+# ============================================================================
+# Aireq — .gitignore
+# Goal: NEVER commit a secret, a build artifact, or an editor scratch file.
+# ============================================================================
+
+# --- secrets ---------------------------------------------------------------
+.env
+.env.*
+!.env.example
+!.env.*.example
+*.pem
+*.key
+*.crt
+*.pfx
+secrets/
+appsettings.Local.json
+appsettings.*.Local.json
+
+# --- .NET ------------------------------------------------------------------
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.userprefs
+project.lock.json
+project.fragment.lock.json
+artifacts/
+publish/
+TestResults/
+*.coverage
+*.coveragexml
+coverage*.xml
+*.trx
+*.opencover.xml
+*.nupkg
+*.snupkg
+[Dd]ebug/
+[Rr]elease/
+[Bb]uild/
+[Bb]uilds/
+[Bb]in/
+[Oo]bj/
+
+# --- Node / pnpm / Next.js -------------------------------------------------
+node_modules/
+.pnpm-store/
+.pnpm-debug.log*
+.next/
+.next-build/
+.turbo/
+out/
+build/
+dist/
+.cache/
+*.tsbuildinfo
+next-env.d.ts.bak
+
+# --- coverage / test ------------------------------------------------------
+coverage/
+.nyc_output/
+playwright-report/
+test-results/
+
+# --- editors / IDEs -------------------------------------------------------
+.idea/
+.vscode/*
+!.vscode/settings.json.example
+!.vscode/extensions.json
+*.swp
+*.swo
+*~
+.history/
+
+# --- OS --------------------------------------------------------------------
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# --- logs / temp -----------------------------------------------------------
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+*.pid
+*.seed
+*.pid.lock
+
+# --- terraform / bicep generated ------------------------------------------
+.terraform/
+*.tfstate
+*.tfstate.*
+.tfplan
+*.bicepparam.local
+
+# --- gitleaks / sarif ------------------------------------------------------
+gitleaks-report.*
+*.sarif
+
+# --- python (CI helpers / scripts) ----------------------------------------
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# --- local dev databases / blobs (if any) ---------------------------------
+.azurite/
+__azurite_db_blob__.json
+__blobstorage__/
+__queuestorage__/
+
+# --- generated docs -------------------------------------------------------
+site/
+_book/

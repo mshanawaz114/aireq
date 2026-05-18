@@ -1,261 +1,230 @@
-# 4-Week Build Plan — AI Operations Copilot
+# Aireq — Phase Plan, Epics & Stories
 
-> Companion to `memory.md`. This is the **execution** document — day-by-day tasks, Jira epics, infra setup steps, and gate criteria for each week. Update `memory.md` for decisions and architecture; update this file when tasks shift.
+> Companion to `memory.md`. **`memory.md` is source of truth for decisions; this file is source of truth for execution.**
+> Every Story has a stable ID. Every branch and commit references its Story ID.
 
-**Working name:** TBD — Benchory / Reqloom / Aplora
-**Stack:** .NET 10 LTS · Next.js 15 · Neon Postgres + pgvector · Playwright · Hangfire · Azure free tier · Resend · Claude API
-
----
-
-## Pre-flight checklist (Day 0 — before week 1 starts)
-
-Do these in order. Each is small. None take more than 30 minutes.
-
-1. **Pick the name.** Buy the `.com` and the `.ai` on the same registrar.
-2. **GitHub:** create the repo `<name>` (private to start). Add `.gitignore` (dotnet + node), `LICENSE` (MIT or proprietary), `README.md`, `memory.md`, `PLAN.md`.
-3. **Jira:** create a Free workspace. Create a project of type **Scrum** named after the brand. Create 4 epics (one per week) and the 5 module epics from §Architecture. Board view = swimlanes by epic.
-4. **Neon:** sign up, create a project `<name>-prod` and a branch `dev`. Capture the two connection strings into a `.env.local` template (commit the template, not values).
-5. **Azure:** activate the free tier. Create a resource group `<name>-rg`. Don't provision compute yet — wait until day 5.
-6. **Vercel:** sign up with your GitHub. We'll point it at the `apps/web` folder later.
-7. **Anthropic API key:** create one. Set a $30 hard cap.
-8. **Resend:** sign up, add the sending domain, set up SPF/DKIM/DMARC records at the registrar (Cloudflare DNS is fastest).
-9. **Cursor / VS Code:** install the .NET 10 SDK preview and Node 22 LTS.
-
-Gate: you can `dotnet --version` and see `10.x`, you can `node -v` and see `22.x`, and `git clone` your empty repo works.
+**Brand:** Aireq · **Pronunciation:** *AI-rek* · **Repo:** `github.com/mshanawaz114/aireq`
+**Stack:** .NET 10 LTS · Next.js 15 · Neon Postgres + pgvector · Playwright · Hangfire · Azure free tier · Claude API · Resend
 
 ---
 
-## Week 1 — Foundation & Resume Intelligence
+## Table of contents
 
-**Goal:** A logged-in user can upload a resume and see a parsed, embedded, queryable profile.
-
-### Day 1 — repo skeleton
-- `dotnet new sln`, scaffold `apps/api`, `apps/worker`, both ASP.NET Core 10 minimal API.
-- `pnpm create next-app@latest apps/web --typescript --tailwind --app`.
-- Set up GitHub Actions: `ci.yml` (build + test on PR), `deploy.yml` (stub for now).
-- Wire `dotnet format`, `eslint`, `prettier` as pre-commit via husky.
-
-### Day 2 — domain model & migrations
-- Add `EntityFramework Core 10` + `Npgsql.EntityFrameworkCore.PostgreSQL` + `Pgvector.EntityFrameworkCore`.
-- Implement entities from `memory.md` §6.
-- First migration. Run against Neon `dev` branch.
-- Seed script for one test tenant + one test consultant.
-
-### Day 3 — auth & multi-tenant middleware
-- ASP.NET Identity with email/password. JWT bearer tokens.
-- `TenantResolutionMiddleware` reads `tenant_id` from JWT and stamps `IHttpContextAccessor`.
-- EF Core global query filter: `entity.TenantId == _tenantContext.Current`.
-- Integration test: user from tenant A cannot read tenant B's data. **This test must stay green for the life of the project.**
-
-### Day 4 — resume upload & blob storage
-- POST `/api/resumes` accepts multipart PDF/DOCX (max 5MB).
-- Stream to Azure Blob (use `Azurite` locally for dev — no Azure cost yet).
-- Enqueue `ParseResumeJob` via Hangfire.
-
-### Day 5 — resume parsing (AI)
-- Build `LlmGateway` service with a strict interface: `Task<T> ExtractAsync<T>(string prompt, string content)` returning typed JSON.
-- Claude Haiku call extracts: `name`, `headline`, `emails`, `phones`, `skills[]`, `experiences[]`, `educations[]`, `certifications[]`.
-- Store parsed JSON on `resumes.parsed_json`, populate `consultant_skills`.
-- Generate embedding of full resume text → `resumes.embedding`.
-
-### Day 6 — minimal web UI
-- Next.js: login page, dashboard shell, "Upload resume" page, "My profile" page.
-- Wire to API. Show parsed profile in editable form.
-- Style with shadcn/ui. Mirror the prototype HTML the owner is reviewing.
-
-### Day 7 — deploy & smoke
-- Provision Azure Container App (consumption plan) for `api` and `worker`.
-- Deploy `web` to Vercel.
-- Connect Neon prod branch.
-- End-to-end: sign up → upload resume → see parsed profile, live URL.
-
-**Week 1 gate:** Working URL. Owner uploads his consultant's real resume. Profile renders correctly. Bill so far: $0.
+1. [Phase 0 — Foundations](#phase-0--foundations) (now)
+2. [Phase 1 — MVP v1](#phase-1--mvp-v1) (Weeks 1-4)
+3. [Phase 2 — Multi-user GA](#phase-2--multi-user-ga) (Weeks 5-8)
+4. [Phase 3 — Scale & moat](#phase-3--scale--moat) (Months 3-6)
+5. [Cross-cutting epics](#cross-cutting-epics)
+6. [Tooling matrix](#tooling-matrix)
+7. [Definition of Done (universal)](#definition-of-done-universal)
 
 ---
 
-## Week 2 — Job Discovery & Matching
+## Phase 0 — Foundations
 
-**Goal:** ≥ 50 real, fresh, deduplicated openings matched and scored against the uploaded profile.
+**Goal:** Professional, accessible, secure, contributor-ready repo. Everything an AI agent or human needs to start Day 1 of MVP work, without re-asking.
+**Branch prefix:** `AIR####-<slug>`
+**Duration:** Day 0 (today).
 
-### Day 8 — Adzuna + USAJobs ingestion
-- Hangfire recurring jobs: every 6h hit Adzuna API per consultant's preferred locations + roles.
-- Every 12h hit USAJobs.
-- Normalize into `jobs` table. Store raw payload in `raw_json` for forensics.
+### Epic AIR-E0 — Repo Foundations
 
-### Day 9 — Greenhouse / Lever / Ashby ingestion
-- Maintain a `companies` table with `ats_provider` and `ats_handle`.
-- Seed with 50 well-known consulting-friendly orgs (Accenture, Deloitte, Slalom, EPAM, mid-tier staffing).
-- Per provider, hit `boards-api.greenhouse.io/v1/boards/<handle>/jobs`, `api.lever.co/v0/postings/<handle>`, `api.ashbyhq.com/posting-api/job-board/<handle>`.
+| Story ID | Title | Branch | Status |
+|---|---|---|---|
+| `AIR0001` | Initial workflow — docs, governance, conventions | `AIR0001-initial-workflow` | **in progress (this branch)** |
+| `AIR0002` | CI/CD pipelines (build, lint, test, a11y, security) | `AIR0002-ci-cd-pipelines` | pending |
+| `AIR0003` | Secret management & pre-commit hooks (gitleaks) | `AIR0003-secret-management` | pending |
+| `AIR0004` | Issue/PR templates, CODEOWNERS, Dependabot config | `AIR0004-github-governance` | pending |
+| `AIR0005` | Accessibility tooling (axe-core, pa11y-ci) wired in CI | `AIR0005-a11y-tooling` | pending |
+| `AIR0006` | Architecture Decision Records (ADRs) seeded | `AIR0006-seed-adrs` | pending |
+| `AIR0007` | Skill & plugin scaffold for Cowork/Claude tools | `AIR0007-skills-plugins` | pending |
 
-### Day 10 — dedupe & freshness
-- Implement content hash. Reject dupes within 30d.
-- Mark jobs `is_active=false` after 2 consecutive scrapes without seeing them.
-- Add `JobsCleanupJob` daily.
-
-### Day 11 — embeddings & vector matching
-- Compute embedding for every new job's JD.
-- Matching query: cosine similarity between consultant resume embedding and job embedding, top-N candidates.
-- Plus rule-based filters: location, work-auth, salary floor, exclusion keywords.
-
-### Day 12 — match scoring & explanation
-- For top 25 candidates, send `(resume, JD)` pair to Haiku and ask for a 0-100 match score with 3-bullet rationale.
-- Persist to `matches.score` and `matches.reasoning_json`.
-
-### Day 13 — Matches UI
-- `/matches` page: sortable list, score badge, why-it-matches tooltip, source badge, "Tailor & apply" button.
-- Filters: source, score, location, posted-within.
-
-### Day 14 — polish & metrics
-- Add a tiny analytics table `events` (event_name, tenant_id, payload, at).
-- Track: `resume.parsed`, `job.ingested`, `match.scored`, `match.viewed`.
-- Lightweight admin dashboard for owner: jobs/day, matches/day, cost/day.
-
-**Week 2 gate:** Owner sees ≥ 50 real matches for his consultant, with scores and explanations. Bill so far: < $5.
+> **AIR0001** (this branch) folds AIR0002–AIR0007's *scaffolding* into a single foundational commit. Each subsequent AIR000X story can then iterate on its own branch as needed.
 
 ---
 
-## Week 3 — ATS Optimization & Auto-Apply
+## Phase 1 — MVP v1
 
-**Goal:** One click takes a match through: tailor → submit → log. Both via API (Tier A) and Playwright (Tier B).
+**Goal:** End-to-end: owner uploads a real resume → system discovers ≥50 real matches → tailors per JD → submits via API/Playwright → follow-up email → recruiter reply classified → human escalation only when needed.
+**Branch prefix:** `AIRMVP1-<story-id>-<slug>`
+**Duration:** Weeks 1-4.
 
-### Day 15 — ATS keyword extractor
-- Parse JD into structured `required_skills`, `nice_to_have`, `keywords[]`.
-- Diff against the consultant's `skills` and `experiences`.
-- Surface a "Missing keywords" panel in the UI before tailoring.
+### Epic AIRMVP1-W1 — Foundation & Resume Intelligence (Week 1)
 
-### Day 16 — resume rewriter (AI)
-- Sonnet call: input = (master resume JSON, target JD, extracted keywords). Output = tailored resume JSON with the same structure.
-- Render the tailored resume to PDF via a Razor template + Puppeteer-Sharp (or use a DocX template then convert).
-- Store under `tailored_resumes`. Compute an ATS-score by counting keyword hits.
+| Story ID | Day | Title | Owner | Estimate |
+|---|---|---|---|---|
+| `AIRMVP1-101` | D1 | Repo skeleton — .NET 10 solution + Next.js 15 app + workspace tooling | dev | 4h |
+| `AIRMVP1-102` | D2 | Domain model + EF Core migrations + pgvector enabled on Neon | dev | 5h |
+| `AIRMVP1-103` | D3 | Auth + multi-tenant middleware + cross-tenant isolation test | dev | 6h |
+| `AIRMVP1-104` | D4 | Resume upload + Azure Blob (Azurite local) + Hangfire enqueue | dev | 4h |
+| `AIRMVP1-105` | D5 | Resume parsing via `LlmGateway` (Claude Haiku) | dev | 6h |
+| `AIRMVP1-106` | D6 | Web UI shell — login, dashboard, upload, profile (a11y baseline) | dev | 5h |
+| `AIRMVP1-107` | D7 | Deploy `api` + `worker` to Azure Container Apps, `web` to Vercel | dev | 4h |
 
-### Day 17 — Tier A submission: Greenhouse + Lever APIs
-- Greenhouse: `POST https://boards-api.greenhouse.io/v1/boards/<handle>/jobs/<id>/applications` with the tailored PDF.
-- Lever: `POST https://api.lever.co/v1/postings/<handle>/<id>` (different shape).
-- Record `submissions` row. Update `matches.status = 'submitted'`.
+**Epic gate:** owner can sign up at the public URL, upload a real resume, see parsed profile rendered. Bill ≤ $1.
 
-### Day 18 — Tier B submission: Playwright templates
-- Build one Playwright "template" per ATS family (Greenhouse-hosted UI, Lever-hosted UI, Workday, iCIMS).
-- Each template = a function `apply(page, jobUrl, profile, tailoredResumePath)`.
-- Run in the `worker` container. Use stealth plugins. Random human-ish delays.
-- **Critical safety:** every apply has a `dry_run` toggle. In v1, default to `dry_run=true` and require explicit owner confirmation in UI.
+### Epic AIRMVP1-W2 — Job Discovery & Matching (Week 2)
 
-### Day 19 — Tier C submission: cold email
-- For matches without a portal, find recruiter email (Hunter.io free tier OR LinkedIn lookup OR `careers@<domain>`).
-- Sonnet drafts a cold email referencing 2 specific JD points + 2 specific resume bullets.
-- Sends via Resend. Threading captured.
-- Throttle: max 30 new outreach emails/day from a fresh domain (warmup).
+| Story ID | Day | Title | Estimate |
+|---|---|---|---|
+| `AIRMVP1-201` | D8  | Adzuna + USAJobs ingestion jobs (Hangfire recurring) | 5h |
+| `AIRMVP1-202` | D9  | Greenhouse / Lever / Ashby ingestion (50 seeded companies) | 6h |
+| `AIRMVP1-203` | D10 | Dedupe + freshness pipeline | 4h |
+| `AIRMVP1-204` | D11 | Embeddings + pgvector cosine matching + rule filters | 5h |
+| `AIRMVP1-205` | D12 | Match scoring + reasoning (Haiku) | 4h |
+| `AIRMVP1-206` | D13 | Matches UI with filters and "Tailor & apply" CTA | 5h |
+| `AIRMVP1-207` | D14 | Events analytics + admin metrics dashboard | 3h |
 
-### Day 20 — submission tracker UI
-- `/submissions` page: timeline view per match. Shows: tailored PDF preview, channel, sent-at, response.
-- Re-apply / un-submit toggles disabled (these are real submissions).
-- Owner can audit AI-generated email content **before** send if `require_approval=true`.
+**Epic gate:** owner sees ≥ 50 real matches with scores + explanations. Bill ≤ $5.
 
-### Day 21 — chaos test
-- Spin up a fake ATS using a Greenhouse demo board. Run 10 real apply cycles.
-- Owner runs it against 5 real jobs end-to-end.
-- Fix the top 3 bugs.
+### Epic AIRMVP1-W3 — Tailor, ATS & Auto-Apply (Week 3)
 
-**Week 3 gate:** 10 successful real submissions logged across portal-API, Playwright, and email channels. Bill so far: < $15.
+| Story ID | Day | Title | Estimate |
+|---|---|---|---|
+| `AIRMVP1-301` | D15 | ATS keyword extractor + missing-keywords UI panel | 4h |
+| `AIRMVP1-302` | D16 | Resume rewriter (Sonnet) + tailored PDF render | 6h |
+| `AIRMVP1-303` | D17 | Tier A submission — Greenhouse + Lever submit APIs | 5h |
+| `AIRMVP1-304` | D18 | Tier B submission — Playwright per-ATS templates (dry-run default) | 8h |
+| `AIRMVP1-305` | D19 | Tier C submission — cold email via Resend (warmup throttling) | 5h |
+| `AIRMVP1-306` | D20 | Submission tracker UI + audit trail | 4h |
+| `AIRMVP1-307` | D21 | Chaos test + bug-bash (10 real applies end-to-end) | 6h |
 
----
+**Epic gate:** 10 real submissions logged across portal-API, Playwright, and email. Bill ≤ $15.
 
-## Week 4 — Recruiter CRM, Escalations, Landing Page, Polish
+### Epic AIRMVP1-W4 — Recruiter CRM, Escalations, Landing (Week 4)
 
-**Goal:** When a recruiter replies, the right person gets the right ping at the right time. Public landing page live.
+| Story ID | Day | Title | Estimate |
+|---|---|---|---|
+| `AIRMVP1-401` | D22 | Gmail API inbound polling + thread matching | 5h |
+| `AIRMVP1-402` | D23 | Inbound classifier (Haiku) + auto-reply drafts + escalation logic | 6h |
+| `AIRMVP1-403` | D24 | Notifications — SignalR in-app + daily email digest | 4h |
+| `AIRMVP1-404` | D25 | Auto follow-up nudges (rate-limited, owner-approval default) | 4h |
+| `AIRMVP1-405` | D26 | Marketing landing page + waitlist + SEO + Plausible | 5h |
+| `AIRMVP1-406` | D27 | Stripe billing (test mode) + 14-day trial + customer portal | 5h |
+| `AIRMVP1-407` | D28 | Owner UAT, bug bash, backlog grooming | 6h |
 
-### Day 22 — inbound email ingestion
-- Gmail API OAuth flow for owner (later: per-tenant).
-- Poll inbox every 5 min via Hangfire recurring job.
-- Match inbound email to `recruiter_threads` by sender + thread-id.
-
-### Day 23 — inbound classification & follow-up agent
-- Haiku classifies each inbound as: `interview_request | rejection | info_request | scheduling | other`.
-- For `info_request`: AI drafts a reply, queued for owner approval.
-- For `scheduling`: pull free slots from Google Calendar, draft reply.
-- For `interview_request` or `rejection`: **escalate** (do not auto-reply).
-
-### Day 24 — notifications
-- In-app real-time via SignalR.
-- Email digest to owner: 8am daily — "3 new interviews, 7 new replies, 2 awaiting your approval".
-- Mobile-friendly UI for the owner to act on his phone.
-
-### Day 25 — auto follow-up
-- For submissions with no reply after 5 business days → AI-drafted polite nudge → owner approval (optional auto-send after 2 nudges).
-
-### Day 26 — landing page + waitlist
-- Marketing site at root. Hero, 3-step explainer, pricing teaser, waitlist form (writes to `waitlist` table).
-- SEO: title, OG image, sitemap.
-- Plausible Analytics free tier.
-
-### Day 27 — billing scaffolding
-- Stripe integration (test mode). Pricing per `memory.md` §13.
-- Free 14-day trial.
-- Stripe Customer Portal for self-serve management.
-
-### Day 28 — owner UAT + bug bash
-- Owner runs the system on his own consultant for the full day.
-- Triage bugs. Fix top 5 P1s. Document P2s in `docs/BACKLOG.md`.
-
-**Week 4 gate (MVP done):**
-- ≥ 1 real submission has resulted in an actual recruiter reply.
-- Owner has used the inbox + escalation flow in production for himself.
-- A second user can sign up via the public site, upload a resume, and reach matches without owner help.
+**Epic gate (MVP DONE):** ≥ 1 real recruiter reply received via the system. Second user can self-sign-up and reach matches. Bill ≤ $30.
 
 ---
 
-## Jira Layout
+## Phase 2 — Multi-user GA
 
-**Project key:** suggested `AOC` (AI Operations Copilot) or after the brand.
+**Branch prefix:** `AIRGA1-` · **Duration:** Weeks 5-8 (post-MVP).
 
-**Issue types:** Epic, Story, Task, Bug, Spike.
-
-**Epics (create on day 0):**
-1. `AOC-E1` Foundations (week 1)
-2. `AOC-E2` Job Discovery (week 2)
-3. `AOC-E3` Tailor & Apply (week 3)
-4. `AOC-E4` CRM & Polish (week 4)
-5. `AOC-E10` Cross-cutting: Auth & Multi-tenancy
-6. `AOC-E11` Cross-cutting: AI Gateway & Cost Caps
-7. `AOC-E12` Cross-cutting: Observability & Logging
-
-Each day in this plan = 1 Story (or small cluster) under the appropriate week epic.
-
-**Boards:**
-- **Now / Next / Later** board for the owner.
-- **Sprint** board with 1-week sprints aligned to the weeks above.
-
-**Definition of Done (per story):** code merged, integration test green, deployed to dev, demoable.
-
----
-
-## What "later" looks like (post-MVP backlog)
-
-Captured so we don't forget but DO NOT build in 4 weeks:
-- Chrome extension that captures a JD from any page and triggers tailor+apply.
-- Auto-warmup of the sending domain (network of seed inboxes).
-- Interview scheduling autopilot (calendar slots, Zoom link generation).
-- Slack / Discord / WhatsApp notifications.
-- Per-agency white-label.
-- A/B-test different tailored resume variants and learn which gets replies.
-- Resume video pitch generation (HeyGen / Synthesia API).
-- Salary intelligence overlay per match (Levels.fyi / Glassdoor data).
-- Open-source the Playwright ATS templates so the community keeps them current.
-
----
-
-## Decision quick-reference
-
-| Decision | Value | Source |
+| Epic | Story IDs | Goal |
 |---|---|---|
-| .NET version | 10 LTS | owner explicit |
-| Multi-tenant | yes, from day 1 | owner explicit |
-| Browser automation | full Playwright, tiered approach | owner explicit |
-| LLM provider | Claude (Haiku+Sonnet), swappable | cheapest-first heuristic |
-| Job sources | Adzuna + USAJobs + GH/Lever/Ashby + RSS + targeted Playwright | best-results heuristic |
-| Hosting | Azure free → Container Apps when traffic grows | free-tier rule |
-| Database | Neon Postgres + pgvector | owner explicit |
-| Frontend host | Vercel | free + lowest friction |
-| Email | Resend | free tier 3k/mo |
-| CI/CD | GitHub Actions | free for private repos |
-| Tracking | Jira free | owner explicit |
-| Memory | `memory.md` (this repo) | owner explicit |
+| `AIRGA1-E1` Hardening | 110-series | Crash-free 99.5%, P95 < 300ms API, P99 < 1s |
+| `AIRGA1-E2` Billing live | 120-series | Stripe production, MRR tracking, invoices |
+| `AIRGA1-E3` Observability | 130-series | OpenTelemetry traces, Loki logs, Grafana dash |
+| `AIRGA1-E4` A11y audit | 140-series | Manual screen-reader sweep, axe 0 violations, WCAG 2.2 AA cert |
+| `AIRGA1-E5` First agency | 150-series | Onboard one real staffing agency, 3-5 consultants |
+
+---
+
+## Phase 3 — Scale & moat
+
+**Branch prefix:** `AIRSCALE-` · **Duration:** Months 3-6.
+
+| Epic | Goal |
+|---|---|
+| `AIRSCALE-E1` ATS library | Open-source per-ATS Playwright templates; community-maintained |
+| `AIRSCALE-E2` Browser extension | Capture JD from any tab → tailor + apply |
+| `AIRSCALE-E3` Agency white-label | Per-tenant brand, custom domain, role-based access |
+| `AIRSCALE-E4` Resume video pitches | HeyGen / Synthesia API integration |
+| `AIRSCALE-E5` Salary intel overlay | Levels.fyi / Glassdoor data per match |
+
+---
+
+## Cross-cutting epics (run alongside every phase)
+
+| Epic ID | Title | Carries |
+|---|---|---|
+| `AIRX-E10` | Auth & multi-tenancy | identity, RBAC, tenant isolation tests |
+| `AIRX-E11` | AI gateway & cost caps | `LlmGateway`, per-tenant budgets, audit log |
+| `AIRX-E12` | Observability | structured logs, metrics, traces, alerts |
+| `AIRX-E13` | Accessibility & ADA | axe/pa11y in CI, manual a11y checks, ACCESSIBILITY.md |
+| `AIRX-E14` | Security & no-leaks | secret scanning, CodeQL, threat-model reviews, SECURITY.md |
+| `AIRX-E15` | Privacy & data lifecycle | 90-day PII purge, GDPR/CCPA DSR endpoints |
+
+---
+
+## Tooling matrix
+
+| Layer | Tool | Why | Cost |
+|---|---|---|---|
+| Language (backend) | C# 13 / .NET 10 LTS | Long-term support, fast, owner's strongest stack | $0 |
+| Web framework | ASP.NET Core 10 Minimal API | Lightweight, OpenAPI-first | $0 |
+| Background jobs | Hangfire + PostgreSQL storage | No Redis needed in v1, durable | $0 |
+| ORM | EF Core 10 + Pgvector.EntityFrameworkCore | Vector search in DB | $0 |
+| DB | Neon Postgres (serverless) | Generous free tier, branching | Free tier |
+| Vector search | pgvector | In-DB, no separate service | $0 |
+| Front-end | Next.js 15 (App Router) | SSR + ISR, great DX, Vercel free | $0 |
+| UI lib | shadcn/ui + Tailwind | Accessible-by-default primitives | $0 |
+| Browser automation | Microsoft Playwright (.NET) | Better stealth than Selenium, MSFT-backed | $0 |
+| LLM | Anthropic Claude (Haiku 4.5 + Sonnet 4.6) | Cheap classifier + strong rewriter | < $20/mo |
+| Embeddings | OpenAI `text-embedding-3-small` | 1536 dims fits pgvector | < $1/mo |
+| Auth | ASP.NET Identity + JWT | No vendor lock-in | $0 |
+| Email out | Resend | Free 3k/mo, easy DKIM | $0 |
+| Email in | Gmail API per-tenant OAuth | No SMTP scraping | $0 |
+| Storage | Azure Blob Storage | 5 GB free | $0 |
+| Hosting | Azure Container Apps (consumption) + Vercel Hobby | Both scale-to-zero | $0 |
+| Secrets | Azure Key Vault → GH Actions secrets in dev | Defense in depth | $0 |
+| CI/CD | GitHub Actions | Free for public + private up to 2k min | $0 |
+| Tracking | Jira Free | 10 users free | $0 |
+| Analytics | Plausible (privacy-first) | Lightweight, GDPR-friendly | starts $9/mo |
+| Errors | Sentry (free) → self-host if needed | Best DX | $0 |
+| Logs/metrics | Serilog → Azure Monitor → later Grafana | Cheap start, expandable | $0 |
+| Lint/format | dotnet format, ESLint, Prettier, Stylelint | CI-enforced | $0 |
+| Security scan | gitleaks (pre-commit), CodeQL (CI), Dependabot | Three independent layers | $0 |
+| Accessibility | axe-core, pa11y-ci, lighthouse-ci | Run on every PR | $0 |
+| Testing | xUnit + Playwright Test + Vitest | Unit + E2E + component | $0 |
+| Docs | mkdocs-material (later) | Public docs site | $0 |
+| Diagrams | Mermaid + draw.io | Diagrams-as-code | $0 |
+| Local dev | dotnet watch, pnpm dev, Azurite (Blob emulator) | Hot reload everywhere | $0 |
+| Container | Docker + docker-compose for full local | Single `make dev` boot | $0 |
+
+**Total at MVP load: < $30/mo, mostly Claude API + domains.**
+
+---
+
+## Definition of Done (universal — every story)
+
+1. Branch follows naming convention (`AIR####-<slug>` or `AIRMVP{N}-<story-id>-<slug>`).
+2. Every commit references the story ID in the footer (`Refs: AIRMVP1-XYZ`).
+3. CI is green (build, test, lint, format, gitleaks, CodeQL, axe-core).
+4. Unit tests cover happy path + 1 failure mode minimum.
+5. For any user-facing change: keyboard-navigable, axe-core clean, contrast ≥ 4.5:1.
+6. For any data-handling change: tenant isolation integration test still green.
+7. For any AI call: `LlmGateway` used (never direct SDK); cost cap respected; prompt + response logged.
+8. PR description references the Story ID, lists what changed and why, links to relevant ADR if architectural.
+9. PR has at least one CODEOWNERS reviewer approval before merge.
+10. `memory.md` updated if a decision was made or scope changed.
+11. Branch deleted after merge.
+
+---
+
+## How to start a story (worked example)
+
+```bash
+# 1. From main, cut your branch
+git checkout main && git pull
+git checkout -b AIRMVP1-103-tenant-middleware
+
+# 2. Do the work, commit in small atomic steps
+git add apps/api/Aireq.Api/Middleware/TenantResolutionMiddleware.cs
+git commit -m "feat(api): add tenant resolution middleware
+
+Resolves tenant_id from JWT claims and stamps the ambient
+IHttpContextAccessor for EF Core global query filters.
+
+Refs: AIRMVP1-103"
+
+# 3. ONE-COMMAND push + PR (never two steps)
+./scripts/push-pr.sh
+# or with an explicit title:
+./scripts/push-pr.sh "AIRMVP1-103 tenant middleware"
+
+# 4. After CI green + review, merge & delete branch
+gh pr merge --squash --delete-branch
+```
+
+> **Project rule:** never run `git push` without opening the PR in the same command. Use `scripts/push-pr.sh` or the chained form `git push … && gh pr create … --web`. See [`AGENTS.md`](AGENTS.md#3-branch-and-commit-rules) for the full convention.
