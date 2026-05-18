@@ -1,0 +1,63 @@
+/* ----- Inter font (must precede @tailwind per CSS spec) ----- */
+@import url("https://rsms.me/inter/inter.css");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ----- Base ----- */
+html,
+body {
+  height: 100%;
+}
+
+body {
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif;
+  background: theme("colors.ink.950");
+  color: theme("colors.slate.100");
+  font-feature-settings: "cv11", "ss01", "ss03";
+}
+
+/* ----- Accessibility: visible focus rings on all interactive elements ----- */
+:where(button, a, [role="button"], input, select, textarea) {
+  outline: none;
+}
+:where(button, a, [role="button"], input, select, textarea):focus-visible {
+  outline: 2px solid theme("colors.brand.400");
+  outline-offset: 2px;
+  border-radius: 0.375rem;
+}
+
+/* ----- Skip-link target ----- */
+.skip-link {
+  position: absolute;
+  left: -10000px;
+  top: auto;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+}
+.skip-link:focus {
+  position: fixed;
+  top: 0.5rem;
+  left: 0.5rem;
+  width: auto;
+  height: auto;
+  padding: 0.5rem 0.75rem;
+  background: theme("colors.brand.500");
+  color: white;
+  z-index: 50;
+  border-radius: 0.375rem;
+}
+
+/* ----- Reduce-motion respect ----- */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -212,11 +212,82 @@ Scale-up triggers (when to upgrade and to what) live in `docs/RUNBOOK.md`.
 
 ## 12. Open Questions / TBD
 
-- [ ] Final brand name (pick from §3).
+- [x] Final brand name → **Aireq** (locked 2026-05-17).
 - [ ] Domain registrar (Namecheap vs Cloudflare Registrar — Cloudflare is at-cost).
-- [ ] Sending domain strategy (own domain vs subdomain like `mail.<brand>.com`).
-- [ ] Whether to gate auto-apply behind explicit per-job "approve & send" toggle in v1 (recommended for safety).
+- [ ] Sending domain strategy (own domain vs subdomain like `mail.aireq.com`).
+- [x] Auto-apply safety → gate behind explicit per-job "approve & send" toggle in v1.
 - [ ] Pricing tier names + numbers (initial draft in §13).
+
+## 12a. Branch & Commit Conventions
+
+### Branch naming
+| Prefix | Use for | Example |
+|---|---|---|
+| `AIR####-<slug>` | Foundation / cross-cutting / ops work (4-digit number) | `AIR0001-initial-workflow`, `AIR0002-ci-cd` |
+| `AIRMVP{N}-<story-id>-<slug>` | MVP iteration N stories (story id from PLAN.md) | `AIRMVP1-101-repo-skeleton`, `AIRMVP1-204-vector-matching` |
+| `hotfix/<short-desc>` | Production hotfixes only | `hotfix/jwt-clock-skew` |
+| `release/v<X.Y.Z>` | Release-prep branches | `release/v0.1.0` |
+
+Rules: kebab-case after the ID, one story per branch, one branch per PR, deleted after merge.
+
+### Commit message format (Conventional Commits)
+```
+<type>(<scope>): <subject>
+
+<body — what + why, not how>
+
+Refs: <story-id>
+```
+
+`<type>`: `feat | fix | chore | docs | test | refactor | perf | build | ci | style | security`.
+`<scope>`: `api | worker | web | infra | docs`.
+Subject: imperative, ≤ 72 chars, no trailing period.
+Every commit must reference a story id in the footer.
+
+### Push & PR — ALWAYS one command, never two
+
+**Hard project rule** (owner explicit on 2026-05-17): `git push` is never the final step. Every push immediately creates the PR in the same command chain so we never accumulate unmerged pushed branches.
+
+Canonical (recommended): use the project script.
+```bash
+./scripts/push-pr.sh                          # title auto-filled from commit
+./scripts/push-pr.sh "AIRMVP1-103 short desc" # explicit title
+```
+
+Manual fallback (always chained with `&&`):
+```bash
+git push -u origin <branch> && \
+gh pr create --base main --fill --title "<story-id> <short>" --web
+```
+
+When an AI agent gives the owner a "push" instruction, it must always be the chained command above. Never just `git push`.
+
+## 12b. Project Phases
+
+| Phase | Goal | Branch prefix | Duration |
+|---|---|---|---|
+| **Phase 0 — Foundations** | Repo, CI, docs, governance, accessibility + security postures | `AIR####-` | Day 0 |
+| **Phase 1 — MVP v1** | End-to-end: resume → discover → tailor → submit → follow-up → escalate | `AIRMVP1-` | Weeks 1-4 |
+| **Phase 2 — Multi-user GA** | Hardening, real billing, observability, a11y audit, first paying agency | `AIRGA1-` | Weeks 5-8 |
+| **Phase 3 — Scale & moat** | Per-ATS template library, browser extension, agency white-label | `AIRSCALE-` | Months 3-6 |
+
+## 12c. Accessibility & ADA Posture
+
+- **Target:** WCAG 2.2 Level AA + ADA Title III alignment + Section 508 alignment.
+- **Enforced in CI:** `axe-core` + `pa11y-ci` on every PR against built Next.js pages.
+- **Mandatory PR checks:** semantic HTML, keyboard navigation, focus indicators, alt text, ARIA only where semantic HTML is insufficient, contrast ≥ 4.5:1.
+- **Public ACCESSIBILITY.md** declares commitment and offers an accommodation contact.
+- **Excluded from v1:** full screen-reader cert audit (Phase 2).
+
+## 12d. Security & "No-Leaks" Posture
+
+- All secrets via Azure Key Vault (or GitHub Actions secrets in dev). **Never commit a secret.** Pre-commit `gitleaks` hook + GitHub push protection.
+- GitHub: secret scanning, push protection, Dependabot, CodeQL all ON.
+- Every AI-generated outbound email logged (who, when, model, prompt, response).
+- Per-tenant data isolation: every query filtered by `tenant_id`; integration test enforces it.
+- Resumes encrypted at rest. PII purged after 90 days for free-tier users.
+- Public SECURITY.md with 90-day responsible-disclosure window.
+- Threat model rankings: tenant data leak via filter bypass = P0; LLM prompt injection from resume into email = P1; Playwright credential leak = P1.
 
 ## 13. Pricing (draft, week 4)
 

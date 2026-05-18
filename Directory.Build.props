@@ -1,0 +1,29 @@
+<Project>
+  <PropertyGroup>
+    <!-- Pin all .NET projects in the repo to a single target framework. -->
+    <TargetFramework>net10.0</TargetFramework>
+
+    <!-- Modern language defaults. -->
+    <LangVersion>latest</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+
+    <!-- Treat warnings as errors in CI; tighten the loop early. -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsNotAsErrors>NU1903</WarningsNotAsErrors>
+
+    <!-- Deterministic builds for reproducible CI. -->
+    <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
+    <Deterministic>true</Deterministic>
+
+    <!-- Source link for debuggable stack traces. -->
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+
+    <!-- Repo metadata propagates to assembly attributes. -->
+    <Company>Aireq</Company>
+    <Authors>Shahnawaz Mohammed</Authors>
+    <Product>Aireq — AI Operations Copilot</Product>
+    <RepositoryUrl>https://github.com/mshanawaz114/aireq</RepositoryUrl>
+  </PropertyGroup>
+</Project>

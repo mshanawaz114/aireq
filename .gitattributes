@@ -1,0 +1,35 @@
+# Normalize line endings across platforms.
+* text=auto eol=lf
+
+# Force LF for shell scripts and source files.
+*.sh    text eol=lf
+*.cs    text eol=lf
+*.ts    text eol=lf
+*.tsx   text eol=lf
+*.js    text eol=lf
+*.jsx   text eol=lf
+*.json  text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.md    text eol=lf
+*.html  text eol=lf
+*.css   text eol=lf
+
+# Force CRLF for Windows-only files (none currently).
+*.bat   text eol=crlf
+*.cmd   text eol=crlf
+
+# Treat as binary.
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.ico   binary
+*.pdf   binary
+*.zip   binary
+*.gz    binary
+
+# Linguist hints — keep these files out of "language stats".
+prototype.html         linguist-documentation
+docs/**                linguist-documentation
+*.md                   linguist-documentation
