@@ -1,0 +1,747 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Aireq — AI Operations Copilot (Prototype)</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          ink:    { 950:'#0a0a0f', 900:'#0e0f15', 800:'#171821', 700:'#222432', 600:'#2f3142' },
+          brand:  { 50:'#eef7ff', 100:'#dbeeff', 200:'#b5dbff', 400:'#5fa7ff', 500:'#3b86ff', 600:'#1e63e6', 700:'#1750bd' },
+          good:   { 500:'#16a34a' },
+          warn:   { 500:'#f59e0b' },
+          bad:    { 500:'#ef4444' },
+        },
+        fontFamily: { sans: ['Inter','ui-sans-serif','system-ui'] },
+      }
+    }
+  };
+</script>
+<link rel="preconnect" href="https://rsms.me/">
+<link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+<style>
+  body { font-family: 'Inter', system-ui, sans-serif; }
+  .scrollbar-thin::-webkit-scrollbar { width: 6px; height: 6px; }
+  .scrollbar-thin::-webkit-scrollbar-thumb { background: #2f3142; border-radius: 3px; }
+  .glass { background: rgba(23,24,33,.6); backdrop-filter: blur(10px); }
+  .grad-hero { background: radial-gradient(60% 80% at 30% 0%, rgba(59,134,255,.25) 0, rgba(10,10,15,0) 70%), radial-gradient(40% 50% at 90% 20%, rgba(168,85,247,.18) 0, rgba(10,10,15,0) 70%); }
+  .dotgrid { background-image: radial-gradient(rgba(255,255,255,.05) 1px, transparent 1px); background-size: 20px 20px; }
+</style>
+</head>
+<body class="bg-ink-950 text-slate-100 min-h-screen">
+
+<!-- =========================== TOP BANNER =========================== -->
+<div class="bg-brand-700/30 text-brand-100 text-xs text-center py-1.5 border-b border-brand-700/40">
+  PROTOTYPE — clickable mock of the v1 product. No live data. Use the sidebar to navigate.
+</div>
+
+<div class="flex">
+  <!-- =========================== SIDEBAR =========================== -->
+  <aside class="w-60 bg-ink-900 border-r border-ink-800 min-h-screen flex flex-col">
+    <div class="px-5 py-5 flex items-center gap-2 border-b border-ink-800">
+      <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center font-bold">A</div>
+      <div>
+        <div class="font-semibold text-sm">Aireq</div>
+        <div class="text-[10px] text-slate-400 -mt-0.5">AI Operations Copilot</div>
+      </div>
+    </div>
+    <nav class="flex-1 px-2 py-3 text-sm space-y-0.5">
+      <button data-page="landing" class="nav-btn w-full text-left px-3 py-2 rounded-md flex items-center gap-2 text-slate-300 hover:bg-ink-800">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
+        Landing Page
+      </button>
+      <div class="text-[10px] uppercase tracking-wide text-slate-500 px-3 pt-4 pb-1">Workspace</div>
+      <button data-page="dashboard" class="nav-btn w-full text-left px-3 py-2 rounded-md flex items-center gap-2 text-slate-300 hover:bg-ink-800">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+        Dashboard
+      </button>
+      <button data-page="profile" class="nav-btn w-full text-left px-3 py-2 rounded-md flex items-center gap-2 text-slate-300 hover:bg-ink-800">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="7" r="4"/><path d="M5 21v-2a7 7 0 0 1 14 0v2"/></svg>
+        Consultant Profile
+      </button>
+      <button data-page="matches" class="nav-btn w-full text-left px-3 py-2 rounded-md flex items-center gap-2 text-slate-300 hover:bg-ink-800">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+        Job Matches
+        <span class="ml-auto text-[10px] bg-brand-500/20 text-brand-200 px-1.5 py-0.5 rounded">62</span>
+      </button>
+      <button data-page="tailor" class="nav-btn w-full text-left px-3 py-2 rounded-md flex items-center gap-2 text-slate-300 hover:bg-ink-800">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4z"/></svg>
+        Tailor &amp; Apply
+      </button>
+      <button data-page="submissions" class="nav-btn w-full text-left px-3 py-2 rounded-md flex items-center gap-2 text-slate-300 hover:bg-ink-800">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Submissions
+        <span class="ml-auto text-[10px] bg-good-500/20 text-good-500 px-1.5 py-0.5 rounded">14</span>
+      </button>
+      <button data-page="inbox" class="nav-btn w-full text-left px-3 py-2 rounded-md flex items-center gap-2 text-slate-300 hover:bg-ink-800">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 6 12 13 2 6"/><rect x="2" y="4" width="20" height="16" rx="2"/></svg>
+        Recruiter Inbox
+        <span class="ml-auto text-[10px] bg-bad-500/20 text-bad-500 px-1.5 py-0.5 rounded">3</span>
+      </button>
+      <button data-page="escalations" class="nav-btn w-full text-left px-3 py-2 rounded-md flex items-center gap-2 text-slate-300 hover:bg-ink-800">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Escalations
+      </button>
+      <div class="text-[10px] uppercase tracking-wide text-slate-500 px-3 pt-4 pb-1">Operate</div>
+      <button data-page="settings" class="nav-btn w-full text-left px-3 py-2 rounded-md flex items-center gap-2 text-slate-300 hover:bg-ink-800">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9 1.65 1.65 0 0 0 4.27 7.18l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Settings
+      </button>
+    </nav>
+    <div class="p-3 border-t border-ink-800 text-xs text-slate-400">
+      <div class="flex items-center gap-2">
+        <div class="w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center text-[11px]">SM</div>
+        <div>
+          <div class="text-slate-200">shahnawaz</div>
+          <div class="text-[10px]">Free plan · 14 days</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- =========================== MAIN =========================== -->
+  <main class="flex-1 min-h-screen">
+
+    <!-- ======================== LANDING ======================== -->
+    <section id="page-landing" class="page grad-hero">
+      <div class="max-w-6xl mx-auto px-8 pt-16 pb-24">
+        <div class="text-xs inline-flex items-center gap-2 bg-ink-800 border border-ink-700 px-3 py-1 rounded-full text-slate-300">
+          <span class="w-1.5 h-1.5 rounded-full bg-good-500 animate-pulse"></span>
+          Now in private beta
+        </div>
+        <h1 class="mt-6 text-5xl font-semibold leading-[1.1] tracking-tight">
+          The AI Operations Copilot for <span class="bg-gradient-to-r from-brand-400 to-purple-400 bg-clip-text text-transparent">staffing &amp; consultants</span>.
+        </h1>
+        <p class="mt-5 text-lg text-slate-300 max-w-2xl">
+          Upload one resume. Aireq continuously finds real openings, rewrites the resume per role to beat ATS, auto-submits, and follows up — and only pings you when a human is actually needed.
+        </p>
+        <div class="mt-8 flex gap-3">
+          <button class="px-5 py-2.5 rounded-md bg-brand-500 hover:bg-brand-600 text-white font-medium">Start free 14-day trial</button>
+          <button onclick="showPage('dashboard')" class="px-5 py-2.5 rounded-md bg-ink-800 hover:bg-ink-700 border border-ink-700">See the dashboard →</button>
+        </div>
+        <div class="mt-3 text-xs text-slate-500">No credit card. Cancel anytime. Free tier covers 1 consultant, 50 applies/mo.</div>
+
+        <!-- product video placeholder -->
+        <div class="mt-14 rounded-xl border border-ink-700 bg-ink-900 overflow-hidden">
+          <div class="px-4 py-2 border-b border-ink-700 flex items-center gap-2">
+            <div class="flex gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-bad-500"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-warn-500"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-good-500"></span>
+            </div>
+            <div class="text-xs text-slate-500 mx-auto">app.aireq.com</div>
+          </div>
+          <div class="h-72 dotgrid flex items-center justify-center text-slate-500">
+            ← click "Dashboard" in the sidebar to see the live app mock
+          </div>
+        </div>
+
+        <!-- 3-step -->
+        <div class="mt-20 grid md:grid-cols-3 gap-6">
+          <div class="p-6 rounded-xl border border-ink-700 bg-ink-900">
+            <div class="w-9 h-9 rounded-lg bg-brand-500/20 text-brand-300 flex items-center justify-center font-semibold">1</div>
+            <div class="mt-4 font-medium">Upload &amp; learn</div>
+            <p class="mt-1 text-sm text-slate-400">Drop in a resume + LinkedIn URL. The agent builds a master profile with skill graph and embeddings.</p>
+          </div>
+          <div class="p-6 rounded-xl border border-ink-700 bg-ink-900">
+            <div class="w-9 h-9 rounded-lg bg-brand-500/20 text-brand-300 flex items-center justify-center font-semibold">2</div>
+            <div class="mt-4 font-medium">Discover &amp; match</div>
+            <p class="mt-1 text-sm text-slate-400">Continuously pulls real openings from Adzuna, USAJobs, Greenhouse, Lever, Ashby, RSS — de-duped, freshness-checked.</p>
+          </div>
+          <div class="p-6 rounded-xl border border-ink-700 bg-ink-900">
+            <div class="w-9 h-9 rounded-lg bg-brand-500/20 text-brand-300 flex items-center justify-center font-semibold">3</div>
+            <div class="mt-4 font-medium">Tailor, apply, follow up</div>
+            <p class="mt-1 text-sm text-slate-400">Rewrites resume per role to clear 75%+ ATS, submits via API or Playwright, sends a personalized cold email — and tracks every reply.</p>
+          </div>
+        </div>
+
+        <!-- pricing strip -->
+        <div class="mt-20">
+          <h2 class="text-2xl font-semibold">Simple pricing.</h2>
+          <div class="mt-6 grid md:grid-cols-3 gap-4">
+            <div class="p-5 rounded-xl border border-ink-700 bg-ink-900">
+              <div class="text-sm text-slate-400">Solo</div>
+              <div class="text-3xl font-semibold mt-1">$39<span class="text-base text-slate-500">/mo</span></div>
+              <ul class="mt-4 text-sm text-slate-300 space-y-1.5">
+                <li>· 1 consultant</li>
+                <li>· 50 auto-applies / mo</li>
+                <li>· 200 AI tailors / mo</li>
+                <li>· Email follow-ups</li>
+              </ul>
+            </div>
+            <div class="p-5 rounded-xl border border-brand-500 bg-gradient-to-b from-brand-500/10 to-transparent ring-1 ring-brand-500/20 relative">
+              <div class="absolute -top-2 right-4 text-[10px] bg-brand-500 text-white px-2 py-0.5 rounded">Most popular</div>
+              <div class="text-sm text-brand-200">Pro</div>
+              <div class="text-3xl font-semibold mt-1">$99<span class="text-base text-slate-500">/mo</span></div>
+              <ul class="mt-4 text-sm text-slate-300 space-y-1.5">
+                <li>· 1 consultant</li>
+                <li>· 200 auto-applies / mo</li>
+                <li>· Unlimited tailors</li>
+                <li>· Recruiter CRM</li>
+                <li>· Priority support</li>
+              </ul>
+            </div>
+            <div class="p-5 rounded-xl border border-ink-700 bg-ink-900">
+              <div class="text-sm text-slate-400">Agency</div>
+              <div class="text-3xl font-semibold mt-1">$399<span class="text-base text-slate-500">/mo</span></div>
+              <ul class="mt-4 text-sm text-slate-300 space-y-1.5">
+                <li>· Up to 10 consultants</li>
+                <li>· Shared recruiter inbox</li>
+                <li>· Team roles &amp; audit</li>
+                <li>· Bulk submission queue</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================== DASHBOARD ======================== -->
+    <section id="page-dashboard" class="page hidden">
+      <header class="px-8 py-5 border-b border-ink-800 flex items-center justify-between">
+        <div>
+          <div class="text-xs text-slate-500">Workspace</div>
+          <h2 class="text-xl font-semibold">Dashboard</h2>
+        </div>
+        <div class="flex gap-2">
+          <button class="text-xs px-3 py-1.5 rounded-md bg-ink-800 border border-ink-700">Last 7 days ▾</button>
+          <button class="text-xs px-3 py-1.5 rounded-md bg-brand-500 text-white">Run discovery now</button>
+        </div>
+      </header>
+      <div class="p-8 grid grid-cols-4 gap-4">
+        <div class="p-5 rounded-xl border border-ink-700 bg-ink-900">
+          <div class="text-xs text-slate-400">New matches</div>
+          <div class="text-3xl font-semibold mt-1">62</div>
+          <div class="text-xs text-good-500 mt-1">+18 this week</div>
+        </div>
+        <div class="p-5 rounded-xl border border-ink-700 bg-ink-900">
+          <div class="text-xs text-slate-400">Submissions</div>
+          <div class="text-3xl font-semibold mt-1">14</div>
+          <div class="text-xs text-slate-400 mt-1">8 portal · 6 email</div>
+        </div>
+        <div class="p-5 rounded-xl border border-ink-700 bg-ink-900">
+          <div class="text-xs text-slate-400">Recruiter replies</div>
+          <div class="text-3xl font-semibold mt-1">5</div>
+          <div class="text-xs text-warn-500 mt-1">3 awaiting you</div>
+        </div>
+        <div class="p-5 rounded-xl border border-ink-700 bg-ink-900">
+          <div class="text-xs text-slate-400">Avg ATS score</div>
+          <div class="text-3xl font-semibold mt-1">82%</div>
+          <div class="text-xs text-good-500 mt-1">up from 64% baseline</div>
+        </div>
+      </div>
+
+      <div class="px-8 grid grid-cols-3 gap-4">
+        <div class="col-span-2 p-5 rounded-xl border border-ink-700 bg-ink-900">
+          <div class="flex items-center justify-between">
+            <div class="font-medium text-sm">Activity (last 14 days)</div>
+            <div class="text-xs text-slate-500">Updated 2 min ago</div>
+          </div>
+          <svg viewBox="0 0 600 180" class="w-full mt-3">
+            <defs>
+              <linearGradient id="g1" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stop-color="#3b86ff" stop-opacity="0.5"/>
+                <stop offset="100%" stop-color="#3b86ff" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <polyline fill="none" stroke="#3b86ff" stroke-width="2"
+              points="0,140 40,120 80,130 120,110 160,90 200,95 240,70 280,80 320,55 360,65 400,40 440,50 480,30 520,45 560,25 600,35"/>
+            <polygon fill="url(#g1)"
+              points="0,140 40,120 80,130 120,110 160,90 200,95 240,70 280,80 320,55 360,65 400,40 440,50 480,30 520,45 560,25 600,35 600,180 0,180"/>
+          </svg>
+          <div class="flex justify-between text-[10px] text-slate-500 mt-1">
+            <span>May 3</span><span>May 10</span><span>May 17</span>
+          </div>
+        </div>
+        <div class="p-5 rounded-xl border border-ink-700 bg-ink-900">
+          <div class="font-medium text-sm">Today&rsquo;s briefing</div>
+          <ul class="mt-3 text-sm space-y-2 text-slate-300">
+            <li class="flex gap-2"><span class="text-good-500">●</span> 18 new jobs ingested (Adzuna 9 · Greenhouse 6 · Lever 3)</li>
+            <li class="flex gap-2"><span class="text-good-500">●</span> 4 resumes tailored automatically</li>
+            <li class="flex gap-2"><span class="text-warn-500">●</span> 2 portals failed (iCIMS — captcha)</li>
+            <li class="flex gap-2"><span class="text-bad-500">●</span> 1 interview request — awaiting your action</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="px-8 pb-12 mt-4">
+        <div class="p-5 rounded-xl border border-ink-700 bg-ink-900">
+          <div class="font-medium text-sm mb-3">Pipeline</div>
+          <div class="grid grid-cols-6 gap-3 text-xs">
+            <div class="p-3 rounded-lg bg-ink-800 border border-ink-700"><div class="text-slate-400">New</div><div class="text-xl font-semibold mt-1">62</div></div>
+            <div class="p-3 rounded-lg bg-ink-800 border border-ink-700"><div class="text-slate-400">Tailored</div><div class="text-xl font-semibold mt-1">21</div></div>
+            <div class="p-3 rounded-lg bg-ink-800 border border-ink-700"><div class="text-slate-400">Submitted</div><div class="text-xl font-semibold mt-1">14</div></div>
+            <div class="p-3 rounded-lg bg-ink-800 border border-ink-700"><div class="text-slate-400">Replied</div><div class="text-xl font-semibold mt-1">5</div></div>
+            <div class="p-3 rounded-lg bg-ink-800 border border-ink-700"><div class="text-slate-400">Interview</div><div class="text-xl font-semibold mt-1">1</div></div>
+            <div class="p-3 rounded-lg bg-ink-800 border border-ink-700"><div class="text-slate-400">Closed</div><div class="text-xl font-semibold mt-1">3</div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================== CONSULTANT PROFILE ======================== -->
+    <section id="page-profile" class="page hidden">
+      <header class="px-8 py-5 border-b border-ink-800 flex items-center justify-between">
+        <div>
+          <div class="text-xs text-slate-500">Workspace</div>
+          <h2 class="text-xl font-semibold">Consultant Profile</h2>
+        </div>
+        <button class="text-xs px-3 py-1.5 rounded-md bg-ink-800 border border-ink-700">Re-upload resume</button>
+      </header>
+      <div class="p-8 grid grid-cols-3 gap-6">
+        <div class="col-span-1 space-y-4">
+          <div class="p-5 rounded-xl border border-ink-700 bg-ink-900">
+            <div class="flex gap-3 items-center">
+              <div class="w-14 h-14 rounded-full bg-gradient-to-br from-brand-500 to-purple-500 flex items-center justify-center font-semibold text-lg">RP</div>
+              <div>
+                <div class="font-medium">Rajesh P. (sample)</div>
+                <div class="text-xs text-slate-400">Senior Salesforce Consultant · 20 yrs · Dubai → US remote</div>
+              </div>
+            </div>
+            <div class="mt-4 text-xs text-slate-400">Master profile last refreshed 2 hours ago by Claude Haiku 4.5</div>
+          </div>
+          <div class="p-5 rounded-xl border border-ink-700 bg-ink-900">
+            <div class="text-sm font-medium mb-3">Preferences</div>
+            <div class="space-y-2 text-xs">
+              <div class="flex justify-between"><span class="text-slate-400">Target roles</span><span>Sr. SF Architect, CRM Lead</span></div>
+              <div class="flex justify-between"><span class="text-slate-400">Locations</span><span>US Remote · Dubai · NYC</span></div>
+              <div class="flex justify-between"><span class="text-slate-400">Rate floor</span><span>$110/hr</span></div>
+              <div class="flex justify-between"><span class="text-slate-400">Work auth</span><span>H1B transfer OK</span></div>
+              <div class="flex justify-between"><span class="text-slate-400">Exclusions</span><span>contract-to-hire only</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="col-span-2 space-y-4">
+          <div class="p-5 rounded-xl border border-ink-700 bg-ink-900">
+            <div class="text-sm font-medium mb-3">Skill graph</div>
+            <div class="flex flex-wrap gap-1.5 text-xs">
+              <span class="px-2 py-1 rounded bg-brand-500/20 text-brand-200 border border-brand-500/30">Salesforce CPQ · 12y</span>
+              <span class="px-2 py-1 rounded bg-brand-500/20 text-brand-200 border border-brand-500/30">Apex · 10y</span>
+              <span class="px-2 py-1 rounded bg-brand-500/20 text-brand-200 border border-brand-500/30">LWC · 6y</span>
+              <span class="px-2 py-1 rounded bg-ink-800 border border-ink-700">Mulesoft · 4y</span>
+              <span class="px-2 py-1 rounded bg-ink-800 border border-ink-700">Solution architecture · 9y</span>
+              <span class="px-2 py-1 rounded bg-ink-800 border border-ink-700">Pre-sales · 7y</span>
+              <span class="px-2 py-1 rounded bg-ink-800 border border-ink-700">Agile · 11y</span>
+              <span class="px-2 py-1 rounded bg-ink-800 border border-ink-700">Data migration · 8y</span>
+              <span class="px-2 py-1 rounded bg-ink-800 border border-ink-700">+24 more</span>
+            </div>
+          </div>
+          <div class="p-5 rounded-xl border border-ink-700 bg-ink-900">
+            <div class="text-sm font-medium mb-3">Experience (parsed)</div>
+            <div class="space-y-3 text-sm">
+              <div>
+                <div class="flex justify-between"><span class="font-medium">Sr. Salesforce Architect — IBM iX</span><span class="text-xs text-slate-400">2019 — 2025</span></div>
+                <p class="text-xs text-slate-400 mt-1">Led CPQ rollout for 3 Fortune 500 accounts. Architected Mulesoft integration cutting order cycle from 7d → 36h…</p>
+              </div>
+              <div>
+                <div class="flex justify-between"><span class="font-medium">SF Lead Consultant — Accenture</span><span class="text-xs text-slate-400">2014 — 2019</span></div>
+                <p class="text-xs text-slate-400 mt-1">Delivered 14 enterprise rollouts across financial-services and telco verticals. Trained &amp; mentored 22 onshore + offshore engineers…</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================== JOB MATCHES ======================== -->
+    <section id="page-matches" class="page hidden">
+      <header class="px-8 py-5 border-b border-ink-800 flex items-center justify-between">
+        <div>
+          <div class="text-xs text-slate-500">Workspace</div>
+          <h2 class="text-xl font-semibold">Job Matches <span class="text-slate-500 font-normal text-sm">· 62 fresh openings</span></h2>
+        </div>
+        <div class="flex gap-2 text-xs">
+          <button class="px-3 py-1.5 rounded-md bg-ink-800 border border-ink-700">All sources ▾</button>
+          <button class="px-3 py-1.5 rounded-md bg-ink-800 border border-ink-700">Score ≥ 70 ▾</button>
+          <button class="px-3 py-1.5 rounded-md bg-ink-800 border border-ink-700">Posted ≤ 7d ▾</button>
+        </div>
+      </header>
+      <div class="p-8 space-y-3">
+        <!-- match cards -->
+        <div class="p-4 rounded-xl border border-ink-700 bg-ink-900 hover:border-brand-500/40 transition cursor-pointer" onclick="showPage('tailor')">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="font-medium">Senior Salesforce Architect — <span class="text-slate-300">Slalom Consulting</span></div>
+              <div class="text-xs text-slate-400 mt-1">Remote · United States · posted 2 days ago · via Greenhouse API</div>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="text-right">
+                <div class="text-xs text-slate-400">Match score</div>
+                <div class="text-2xl font-semibold text-good-500">94</div>
+              </div>
+              <button class="px-3 py-1.5 rounded-md bg-brand-500 text-xs hover:bg-brand-600">Tailor &amp; apply →</button>
+            </div>
+          </div>
+          <div class="mt-3 flex gap-1.5 text-[10px]">
+            <span class="px-2 py-0.5 rounded bg-good-500/20 text-good-500">CPQ ✓</span>
+            <span class="px-2 py-0.5 rounded bg-good-500/20 text-good-500">Apex ✓</span>
+            <span class="px-2 py-0.5 rounded bg-good-500/20 text-good-500">Architecture ✓</span>
+            <span class="px-2 py-0.5 rounded bg-warn-500/20 text-warn-500">Vlocity ~</span>
+            <span class="px-2 py-0.5 rounded bg-bad-500/20 text-bad-500">FSL ✗</span>
+          </div>
+        </div>
+
+        <div class="p-4 rounded-xl border border-ink-700 bg-ink-900 hover:border-brand-500/40 transition cursor-pointer">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="font-medium">CRM Solution Lead — <span class="text-slate-300">EPAM Systems</span></div>
+              <div class="text-xs text-slate-400 mt-1">Remote · NYC · posted 1 day ago · via Lever API</div>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="text-right">
+                <div class="text-xs text-slate-400">Match score</div>
+                <div class="text-2xl font-semibold text-good-500">88</div>
+              </div>
+              <button class="px-3 py-1.5 rounded-md bg-brand-500 text-xs hover:bg-brand-600">Tailor &amp; apply →</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-4 rounded-xl border border-ink-700 bg-ink-900 hover:border-brand-500/40 transition cursor-pointer">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="font-medium">Salesforce Technical Lead — <span class="text-slate-300">Capgemini Government Solutions</span></div>
+              <div class="text-xs text-slate-400 mt-1">Hybrid · Washington DC · posted 4 days ago · via Adzuna</div>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="text-right">
+                <div class="text-xs text-slate-400">Match score</div>
+                <div class="text-2xl font-semibold text-warn-500">76</div>
+              </div>
+              <button class="px-3 py-1.5 rounded-md bg-brand-500 text-xs hover:bg-brand-600">Tailor &amp; apply →</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-4 rounded-xl border border-ink-700 bg-ink-900 hover:border-brand-500/40 transition cursor-pointer">
+          <div class="flex items-center justify-between">
+            <div>
+              <div class="font-medium">SF CPQ Architect — <span class="text-slate-300">Persistent Systems</span></div>
+              <div class="text-xs text-slate-400 mt-1">Remote · USA · posted 6 days ago · via Ashby API</div>
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="text-right">
+                <div class="text-xs text-slate-400">Match score</div>
+                <div class="text-2xl font-semibold text-warn-500">71</div>
+              </div>
+              <button class="px-3 py-1.5 rounded-md bg-brand-500 text-xs hover:bg-brand-600">Tailor &amp; apply →</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="text-center text-xs text-slate-500 pt-4">Showing 4 of 62 · <a class="text-brand-400 hover:underline cursor-pointer">load more</a></div>
+      </div>
+    </section>
+
+    <!-- ======================== TAILOR & APPLY ======================== -->
+    <section id="page-tailor" class="page hidden">
+      <header class="px-8 py-5 border-b border-ink-800 flex items-center justify-between">
+        <div>
+          <div class="text-xs text-slate-500">Workspace · Match #2841</div>
+          <h2 class="text-xl font-semibold">Tailor &amp; Apply — Slalom · Sr. Salesforce Architect</h2>
+        </div>
+        <button onclick="showPage('matches')" class="text-xs px-3 py-1.5 rounded-md bg-ink-800 border border-ink-700">← Back to matches</button>
+      </header>
+      <div class="p-8 grid grid-cols-3 gap-4">
+        <div class="col-span-1 p-5 rounded-xl border border-ink-700 bg-ink-900">
+          <div class="text-sm font-medium">JD analysis</div>
+          <div class="mt-3 text-xs space-y-2">
+            <div><div class="text-slate-400">Required keywords</div>
+              <div class="mt-1 flex flex-wrap gap-1">
+                <span class="px-1.5 py-0.5 rounded bg-good-500/20 text-good-500">Apex</span>
+                <span class="px-1.5 py-0.5 rounded bg-good-500/20 text-good-500">CPQ</span>
+                <span class="px-1.5 py-0.5 rounded bg-good-500/20 text-good-500">LWC</span>
+                <span class="px-1.5 py-0.5 rounded bg-bad-500/20 text-bad-500">FSL — missing</span>
+                <span class="px-1.5 py-0.5 rounded bg-warn-500/20 text-warn-500">Vlocity — weak</span>
+              </div>
+            </div>
+            <div class="border-t border-ink-700 pt-2"><div class="text-slate-400">ATS coverage</div>
+              <div class="mt-1 flex items-center gap-2">
+                <div class="flex-1 h-2 rounded bg-ink-700 overflow-hidden"><div class="h-full bg-good-500" style="width:84%"></div></div>
+                <div class="text-good-500 font-medium">84%</div>
+              </div>
+              <div class="text-[10px] text-slate-500 mt-1">Baseline was 61% before rewrite</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-span-2 p-5 rounded-xl border border-ink-700 bg-ink-900">
+          <div class="flex justify-between items-center">
+            <div class="text-sm font-medium">AI-tailored resume (diff view)</div>
+            <div class="text-xs text-slate-500">Generated by Claude Sonnet 4.6 · 6 sec</div>
+          </div>
+          <div class="mt-3 text-xs font-mono bg-ink-950 rounded border border-ink-700 p-3 space-y-1 max-h-72 overflow-auto scrollbar-thin">
+            <div class="text-slate-400">Summary</div>
+            <div class="text-bad-500">- Senior Salesforce consultant with 20+ years architecting CRM platforms.</div>
+            <div class="text-good-500">+ Salesforce Architect with 20+ years delivering enterprise CPQ, Apex and LWC rollouts for Fortune-500 clients across financial-services and telco.</div>
+            <div class="text-slate-400 mt-2">Bullet — IBM iX role</div>
+            <div class="text-bad-500">- Led CPQ rollout for 3 enterprise accounts.</div>
+            <div class="text-good-500">+ Led Salesforce CPQ + Mulesoft rollout for 3 Fortune-500 accounts, cutting quote-to-cash cycle 78% (7d → 36h) and improving renewal accuracy by 22%.</div>
+            <div class="text-slate-400 mt-2">Skills section</div>
+            <div class="text-good-500">+ Added: Salesforce Industries (Vlocity), Experience Cloud, Apex Async, Platform Events</div>
+          </div>
+          <div class="mt-4 flex items-center justify-between text-xs">
+            <div class="flex gap-2 text-slate-400">
+              <button class="px-2 py-1 rounded bg-ink-800 border border-ink-700">View PDF preview</button>
+              <button class="px-2 py-1 rounded bg-ink-800 border border-ink-700">Manual tweak</button>
+            </div>
+            <div class="flex gap-2">
+              <button class="px-3 py-1.5 rounded bg-ink-800 border border-ink-700 text-slate-300">Skip</button>
+              <button class="px-4 py-1.5 rounded bg-brand-500 hover:bg-brand-600 text-white">Approve &amp; submit →</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-span-3 p-5 rounded-xl border border-ink-700 bg-ink-900">
+          <div class="text-sm font-medium mb-3">Submission plan</div>
+          <div class="grid grid-cols-3 gap-3 text-xs">
+            <div class="p-3 rounded-lg border border-ink-700 bg-ink-950">
+              <div class="text-good-500 text-[10px] uppercase">Tier A — API</div>
+              <div class="mt-1 text-slate-200">Greenhouse Submit API</div>
+              <div class="mt-1 text-slate-500">Will POST tailored PDF to <code>boards-api.greenhouse.io</code>. No browser needed.</div>
+            </div>
+            <div class="p-3 rounded-lg border border-ink-700 bg-ink-950 opacity-60">
+              <div class="text-slate-500 text-[10px] uppercase">Tier B — Playwright</div>
+              <div class="mt-1 text-slate-200">Greenhouse-hosted UI</div>
+              <div class="mt-1 text-slate-500">Fallback if API rejects.</div>
+            </div>
+            <div class="p-3 rounded-lg border border-ink-700 bg-ink-950 opacity-60">
+              <div class="text-slate-500 text-[10px] uppercase">Tier C — Cold email</div>
+              <div class="mt-1 text-slate-200">careers@slalom.com</div>
+              <div class="mt-1 text-slate-500">Will not fire (portal succeeded).</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================== SUBMISSIONS ======================== -->
+    <section id="page-submissions" class="page hidden">
+      <header class="px-8 py-5 border-b border-ink-800">
+        <div class="text-xs text-slate-500">Workspace</div>
+        <h2 class="text-xl font-semibold">Submissions</h2>
+      </header>
+      <div class="p-8">
+        <div class="rounded-xl border border-ink-700 bg-ink-900 overflow-hidden">
+          <table class="w-full text-sm">
+            <thead class="bg-ink-800 text-xs text-slate-400">
+              <tr>
+                <th class="text-left px-4 py-2.5">Job</th>
+                <th class="text-left px-4 py-2.5">Channel</th>
+                <th class="text-left px-4 py-2.5">Sent</th>
+                <th class="text-left px-4 py-2.5">Status</th>
+                <th class="text-left px-4 py-2.5">ATS</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-ink-700">
+              <tr class="hover:bg-ink-800/40">
+                <td class="px-4 py-3"><div>Slalom · Sr. SF Architect</div><div class="text-xs text-slate-500">Remote · US</div></td>
+                <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-[10px] bg-brand-500/20 text-brand-200">Greenhouse API</span></td>
+                <td class="px-4 py-3 text-slate-400">2h ago</td>
+                <td class="px-4 py-3"><span class="text-good-500">● Received</span></td>
+                <td class="px-4 py-3">84%</td>
+                <td class="px-4 py-3 text-right"><a class="text-xs text-brand-400">view →</a></td>
+              </tr>
+              <tr class="hover:bg-ink-800/40">
+                <td class="px-4 py-3"><div>EPAM · CRM Solution Lead</div><div class="text-xs text-slate-500">Remote · NYC</div></td>
+                <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-[10px] bg-brand-500/20 text-brand-200">Lever API</span></td>
+                <td class="px-4 py-3 text-slate-400">5h ago</td>
+                <td class="px-4 py-3"><span class="text-good-500">● Received</span></td>
+                <td class="px-4 py-3">79%</td>
+                <td class="px-4 py-3 text-right"><a class="text-xs text-brand-400">view →</a></td>
+              </tr>
+              <tr class="hover:bg-ink-800/40">
+                <td class="px-4 py-3"><div>Capgemini · SF Tech Lead</div><div class="text-xs text-slate-500">DC hybrid</div></td>
+                <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-[10px] bg-purple-500/20 text-purple-300">Playwright</span></td>
+                <td class="px-4 py-3 text-slate-400">yesterday</td>
+                <td class="px-4 py-3"><span class="text-warn-500">● Reply received</span></td>
+                <td class="px-4 py-3">81%</td>
+                <td class="px-4 py-3 text-right"><a class="text-xs text-brand-400">view →</a></td>
+              </tr>
+              <tr class="hover:bg-ink-800/40">
+                <td class="px-4 py-3"><div>Persistent · SF CPQ Architect</div><div class="text-xs text-slate-500">Remote · US</div></td>
+                <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-[10px] bg-slate-500/20 text-slate-300">Cold email</span></td>
+                <td class="px-4 py-3 text-slate-400">yesterday</td>
+                <td class="px-4 py-3"><span class="text-slate-400">○ Awaiting</span></td>
+                <td class="px-4 py-3">73%</td>
+                <td class="px-4 py-3 text-right"><a class="text-xs text-brand-400">view →</a></td>
+              </tr>
+              <tr class="hover:bg-ink-800/40">
+                <td class="px-4 py-3"><div>Cognizant · SF Solution Architect</div><div class="text-xs text-slate-500">Onsite NJ</div></td>
+                <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-[10px] bg-purple-500/20 text-purple-300">Playwright</span></td>
+                <td class="px-4 py-3 text-slate-400">2 days ago</td>
+                <td class="px-4 py-3"><span class="text-bad-500">● Rejected (auto)</span></td>
+                <td class="px-4 py-3">68%</td>
+                <td class="px-4 py-3 text-right"><a class="text-xs text-brand-400">view →</a></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================== RECRUITER INBOX ======================== -->
+    <section id="page-inbox" class="page hidden">
+      <header class="px-8 py-5 border-b border-ink-800">
+        <div class="text-xs text-slate-500">Workspace</div>
+        <h2 class="text-xl font-semibold">Recruiter Inbox</h2>
+      </header>
+      <div class="p-8 grid grid-cols-3 gap-4">
+        <div class="col-span-1 rounded-xl border border-ink-700 bg-ink-900 divide-y divide-ink-800 overflow-hidden">
+          <div class="p-3 bg-ink-800/60 border-l-2 border-brand-500">
+            <div class="flex justify-between text-xs"><span class="font-medium">Aisha N. (Capgemini)</span><span class="text-slate-500">2h</span></div>
+            <div class="text-xs text-slate-400 mt-1">"Are you available for a 30-min screen this Thu?" — interview request</div>
+            <div class="mt-1 flex gap-1">
+              <span class="px-1.5 py-0.5 rounded text-[10px] bg-bad-500/20 text-bad-500">action needed</span>
+            </div>
+          </div>
+          <div class="p-3">
+            <div class="flex justify-between text-xs"><span class="font-medium">Marcus T. (Slalom)</span><span class="text-slate-500">5h</span></div>
+            <div class="text-xs text-slate-400 mt-1">"Thanks — can you share salary expectations?"</div>
+            <div class="mt-1 flex gap-1">
+              <span class="px-1.5 py-0.5 rounded text-[10px] bg-warn-500/20 text-warn-500">info request</span>
+            </div>
+          </div>
+          <div class="p-3">
+            <div class="flex justify-between text-xs"><span class="font-medium">Priya K. (EPAM)</span><span class="text-slate-500">1d</span></div>
+            <div class="text-xs text-slate-400 mt-1">"Adding our SF practice lead Sarah to introduce…"</div>
+            <div class="mt-1 flex gap-1">
+              <span class="px-1.5 py-0.5 rounded text-[10px] bg-good-500/20 text-good-500">positive</span>
+              <span class="px-1.5 py-0.5 rounded text-[10px] bg-brand-500/20 text-brand-200">AI replied</span>
+            </div>
+          </div>
+          <div class="p-3 opacity-60">
+            <div class="flex justify-between text-xs"><span>Dev R. (Cognizant)</span><span class="text-slate-500">2d</span></div>
+            <div class="text-xs text-slate-400 mt-1">Auto-rejection notice.</div>
+          </div>
+        </div>
+
+        <div class="col-span-2 rounded-xl border border-ink-700 bg-ink-900 p-5">
+          <div class="flex justify-between items-center">
+            <div>
+              <div class="font-medium">Aisha N. — Capgemini Government Solutions</div>
+              <div class="text-xs text-slate-400">aisha.naidu@capgemini.com · Sr. Salesforce Tech Lead</div>
+            </div>
+            <span class="px-2 py-0.5 rounded text-[10px] bg-bad-500/20 text-bad-500">awaiting your action</span>
+          </div>
+          <div class="mt-5 space-y-3 text-sm">
+            <div class="p-3 rounded-lg bg-ink-800/60 border border-ink-700">
+              <div class="text-xs text-slate-500 mb-1">Aisha · 2h ago</div>
+              Hi Rajesh — thanks for the strong submission. Are you available for a 30-min screen this Thursday at 11am EST? I'd like to dig into your CPQ rollout at IBM. — Aisha
+            </div>
+            <div class="p-3 rounded-lg border border-brand-500/40 bg-brand-500/10">
+              <div class="flex justify-between items-center text-xs mb-1">
+                <span class="text-brand-200 font-medium">AI suggested reply</span>
+                <span class="text-slate-500">Classified: interview_request → escalated to you</span>
+              </div>
+              <p class="text-slate-200">Hi Aisha — yes, Thursday 11am EST works. I'll send a calendar invite shortly. Happy to walk through the CPQ + Mulesoft architecture decisions and the quote-cycle improvement at IBM in detail. — Rajesh</p>
+              <div class="mt-3 flex justify-end gap-2">
+                <button class="px-3 py-1.5 rounded bg-ink-800 border border-ink-700 text-xs">Edit</button>
+                <button class="px-3 py-1.5 rounded bg-brand-500 hover:bg-brand-600 text-xs text-white">Send + create calendar invite</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================== ESCALATIONS ======================== -->
+    <section id="page-escalations" class="page hidden">
+      <header class="px-8 py-5 border-b border-ink-800">
+        <div class="text-xs text-slate-500">Workspace</div>
+        <h2 class="text-xl font-semibold">Escalations</h2>
+      </header>
+      <div class="p-8 space-y-3">
+        <div class="p-4 rounded-xl border border-bad-500/40 bg-bad-500/5 flex items-center justify-between">
+          <div>
+            <div class="font-medium">Interview request — Capgemini · Sr. SF Tech Lead</div>
+            <div class="text-xs text-slate-400 mt-1">Recruiter wants Thursday 11am EST. Auto-reply drafted and waiting.</div>
+          </div>
+          <button onclick="showPage('inbox')" class="px-3 py-1.5 rounded bg-ink-800 border border-ink-700 text-xs">Review →</button>
+        </div>
+        <div class="p-4 rounded-xl border border-warn-500/40 bg-warn-500/5 flex items-center justify-between">
+          <div>
+            <div class="font-medium">Salary expectation question — Slalom</div>
+            <div class="text-xs text-slate-400 mt-1">Marcus asked for compensation expectation. Sensitive — needs your input.</div>
+          </div>
+          <button class="px-3 py-1.5 rounded bg-ink-800 border border-ink-700 text-xs">Review →</button>
+        </div>
+        <div class="p-4 rounded-xl border border-warn-500/40 bg-warn-500/5 flex items-center justify-between">
+          <div>
+            <div class="font-medium">Portal CAPTCHA — iCIMS @ Deloitte</div>
+            <div class="text-xs text-slate-400 mt-1">Playwright run failed CAPTCHA challenge. 1-click open in your browser?</div>
+          </div>
+          <button class="px-3 py-1.5 rounded bg-ink-800 border border-ink-700 text-xs">Open in browser →</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================== SETTINGS ======================== -->
+    <section id="page-settings" class="page hidden">
+      <header class="px-8 py-5 border-b border-ink-800">
+        <div class="text-xs text-slate-500">Operate</div>
+        <h2 class="text-xl font-semibold">Settings</h2>
+      </header>
+      <div class="p-8 grid grid-cols-2 gap-4">
+        <div class="p-5 rounded-xl border border-ink-700 bg-ink-900">
+          <div class="text-sm font-medium">Auto-apply safety</div>
+          <div class="mt-3 space-y-2 text-xs">
+            <label class="flex items-center justify-between"><span>Require my approval before each apply</span><input type="checkbox" checked></label>
+            <label class="flex items-center justify-between"><span>Daily cap on auto-applies</span><span>10</span></label>
+            <label class="flex items-center justify-between"><span>Send AI cold emails without approval</span><input type="checkbox"></label>
+            <label class="flex items-center justify-between"><span>Pause everything when over budget</span><input type="checkbox" checked></label>
+          </div>
+        </div>
+        <div class="p-5 rounded-xl border border-ink-700 bg-ink-900">
+          <div class="text-sm font-medium">AI &amp; cost</div>
+          <div class="mt-3 space-y-2 text-xs">
+            <div class="flex items-center justify-between"><span>Parser / classifier model</span><span>Claude Haiku 4.5</span></div>
+            <div class="flex items-center justify-between"><span>Rewriter model</span><span>Claude Sonnet 4.6</span></div>
+            <div class="flex items-center justify-between"><span>Monthly hard cap</span><span>$20</span></div>
+            <div class="flex items-center justify-between"><span>Spent this month</span><span class="text-good-500">$4.12</span></div>
+          </div>
+        </div>
+        <div class="p-5 rounded-xl border border-ink-700 bg-ink-900">
+          <div class="text-sm font-medium">Connected accounts</div>
+          <div class="mt-3 space-y-2 text-xs">
+            <div class="flex items-center justify-between"><span>Gmail (inbox monitor)</span><span class="text-good-500">connected</span></div>
+            <div class="flex items-center justify-between"><span>Resend (sending)</span><span class="text-good-500">connected · DKIM ok</span></div>
+            <div class="flex items-center justify-between"><span>LinkedIn (read-only)</span><span class="text-slate-400">not connected</span></div>
+            <div class="flex items-center justify-between"><span>Google Calendar</span><span class="text-good-500">connected</span></div>
+          </div>
+        </div>
+        <div class="p-5 rounded-xl border border-ink-700 bg-ink-900">
+          <div class="text-sm font-medium">Memory &amp; agent context</div>
+          <div class="mt-3 text-xs text-slate-300">
+            <p>Your <code>memory.md</code> for this tenant is synced to your private repo. Any AI tool with access reads from this file so nothing has to be re-explained.</p>
+            <button class="mt-2 px-3 py-1.5 rounded bg-ink-800 border border-ink-700">Open memory.md →</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+  function showPage(name) {
+    document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
+    document.getElementById('page-' + name).classList.remove('hidden');
+    document.querySelectorAll('.nav-btn').forEach(b => {
+      const active = b.dataset.page === name;
+      b.classList.toggle('bg-ink-800', active);
+      b.classList.toggle('text-white', active);
+      b.classList.toggle('text-slate-300', !active);
+    });
+    window.scrollTo({top:0,behavior:'instant'});
+  }
+  document.querySelectorAll('.nav-btn').forEach(b => b.addEventListener('click', () => showPage(b.dataset.page)));
+  showPage('landing');
+</script>
+</body>
+</html>
