@@ -16,9 +16,11 @@
     <ContinuousIntegrationBuild Condition="'$(CI)' == 'true'">true</ContinuousIntegrationBuild>
     <Deterministic>true</Deterministic>
 
-    <!-- Source link for debuggable stack traces. -->
-    <IncludeSymbols>true</IncludeSymbols>
-    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <!-- IncludeSymbols/SymbolPackageFormat intentionally NOT set here:
+         they trigger NuGet packaging tasks (GetAssemblyVersion requiring
+         NuGetVersion), which break the build for non-packable apps
+         (API and Worker). Re-enable per-csproj when we actually publish
+         NuGet packages from this repo. -->
 
     <!-- Repo metadata propagates to assembly attributes. -->
     <Company>Aireq</Company>

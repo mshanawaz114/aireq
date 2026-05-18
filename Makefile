@@ -38,11 +38,14 @@ dev: ## Run api + worker + web with hot reload (uses 'concurrently'-style output
 #   - Next.js auto-loads apps/web/.env.local. If you want NEXT_PUBLIC_* vars
 #     in the web app, mirror them there (we'll automate this in AIR0002).
 
-api: ## Run the API project with hot reload (port 5080 via launchSettings).
-	cd apps/api/Aireq.Api && dotnet watch run
+# DOTNET_USE_POLLING_FILE_WATCHER works around a macOS dotnet-watch bug where
+# the FSEvents-based watcher chokes on the SDK manifest directory. Polling is
+# slightly slower to detect changes but reliable.
+api: ## Run the API project with hot reload (port 5180 via launchSettings).
+	cd apps/api/Aireq.Api && DOTNET_USE_POLLING_FILE_WATCHER=true dotnet watch run
 
 worker: ## Run the worker project with hot reload (port 5090 via launchSettings).
-	cd apps/worker/Aireq.Worker && dotnet watch run
+	cd apps/worker/Aireq.Worker && DOTNET_USE_POLLING_FILE_WATCHER=true dotnet watch run
 
 web: ## Run the Next.js web app with hot reload (port 3000).
 	cd apps/web && pnpm dev
