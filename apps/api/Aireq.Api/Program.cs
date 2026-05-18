@@ -8,10 +8,13 @@
 //   - Health endpoints (liveness + readiness with DB ping)
 // Refs: AIRMVP1-101
 
+using Aireq.Api.Auth;
 using Aireq.Api.Data;
+using Aireq.Api.Data.Entities;
 using Aireq.Api.Endpoints;
 using Aireq.Shared.Db;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
@@ -58,8 +61,9 @@ builder.Services.AddCors(o => o.AddDefaultPolicy(p => p
     .AllowAnyHeader()
     .AllowAnyMethod()));
 
-// Minimal JWT bearer scaffolding — real Identity lands in AIRMVP1-103.
-var jwtKey = builder.Configuration["JWT__SIGNING_KEY"] ?? "dev-only-do-not-use-in-prod-32bytes!!";
+// JWT bearer setup. Config keys use ':' because .NET's env-var provider
+// converts '__' → ':' (e.g. JWT__SIGNING_KEY → JWT:SIGNING_KEY).
+var jwtKey = builder.Configuration["JWT:SIGNING_KEY"] ?? "dev-only-do-not-use-in-prod-32bytes!!";
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(o =>
     {
@@ -69,13 +73,21 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             ValidateAudience = true,
             ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer = builder.Configuration["JWT__ISSUER"] ?? "aireq",
-            ValidAudience = builder.Configuration["JWT__AUDIENCE"] ?? "aireq-web",
+            ValidIssuer = builder.Configuration["JWT:ISSUER"] ?? "aireq",
+            ValidAudience = builder.Configuration["JWT:AUDIENCE"] ?? "aireq-web",
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
             ClockSkew = TimeSpan.FromSeconds(30),
         };
     });
 builder.Services.AddAuthorization();
+
+// Tenant context — Scoped so each request gets the right values from its JWT.
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ITenantContext, HttpTenantContext>();
+
+// Auth services
+builder.Services.AddSingleton<JwtTokenService>();
+builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
 
 builder.Services.AddOpenApi();
 
@@ -107,6 +119,7 @@ if (app.Environment.IsDevelopment())
 // --- Endpoints -------------------------------------------------------------
 app.MapHealthEndpoints();
 app.MapDbStatusEndpoints();
+app.MapAuthEndpoints();
 
 app.Run();
 
