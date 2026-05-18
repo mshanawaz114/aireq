@@ -110,3 +110,9 @@ What's left for you (manual steps that need a human at a portal):
 When the badge is green, AIRMVP1-101 is done. Cut AIRMVP1-102 next.
 
 EOF
+
+# ---------- pre-commit hooks (AIR0003) ---------------------------------------
+if [[ -x "scripts/install-hooks.sh" ]]; then
+    echo ">> installing pre-commit hooks (gitleaks, prettier, dotnet format, commit-msg)..."
+    ./scripts/install-hooks.sh || echo "warning: pre-commit hook install failed; run scripts/install-hooks.sh later."
+fi

@@ -1,0 +1,44 @@
+# .gitleaks.toml — Aireq's local gitleaks configuration.
+#
+# Wraps the upstream defaults plus a small allowlist for known-safe strings.
+# Used by:
+#   - .github/workflows/ci.yml  (gitleaks-action job, per push / PR)
+#   - .pre-commit-config.yaml   (every git commit, locally)
+#
+# Refs: AIR0003
+
+# Inherit every default rule (AWS, GCP, GitHub, Slack, Stripe, generic API key
+# heuristics, etc.). We never disable a default rule — only add to allowlist.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Known-safe strings that look like secrets but are not"
+
+# Files we never scan (vendored, generated, lockfiles, design notes).
+paths = [
+    '''(^|/)\.git/''',
+    '''(^|/)node_modules/''',
+    '''(^|/)bin/''',
+    '''(^|/)obj/''',
+    '''(^|/)\.next/''',
+    '''(^|/)pnpm-lock\.yaml$''',
+    '''(^|/)package-lock\.json$''',
+    '''(^|/)\.env\.example$''',
+    '''(^|/)prototype\.html$''',
+]
+
+# Strings that pattern-match a secret but are placeholders.
+regexes = [
+    # Aireq's constant-time dummy hash used by AuthEndpoints.LoginAsync to
+    # avoid timing attacks. Never used as a real credential.
+    '''AQAAAAIAAYagAAAAEPlaceholderConstantTimeDummyHash_NotARealPassword=''',
+    # Dev-only JWT signing key fallback in Program.cs.
+    '''dev-only-do-not-use-in-prod-32bytes!!''',
+    # Common doc / README placeholders.
+    '''replace-me-32-byte-min-random-base64''',
+]
+
+# Commit messages we never scan (e.g. revert commits that re-quote a leaked
+# string — we want the revert to land cleanly).
+commits = []
