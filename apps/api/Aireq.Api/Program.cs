@@ -42,8 +42,12 @@ var rawDb = builder.Configuration["DATABASE_URL_DEV"]
 var dbConnection = NeonConnectionString.Normalize(rawDb);
 
 // --- Services --------------------------------------------------------------
-builder.Services.AddDbContext<AireqDbContext>(opts =>
-    opts.UseNpgsql(dbConnection, npg => npg.UseVector()));
+// Snake_case naming is applied inside AireqDbContext.OnModelCreating, not via
+// the EFCore.NamingConventions plugin (which lags EF Core 10 as of May 2026).
+builder.Services.AddDbContext<AireqDbContext>(opts => opts
+    .UseNpgsql(dbConnection, npg => npg
+        .UseVector()
+        .MigrationsAssembly(typeof(AireqDbContext).Assembly.GetName().Name)));
 
 builder.Services.AddHealthChecks()
     .AddNpgSql(dbConnection, name: "postgres", tags: new[] { "ready" });
@@ -77,6 +81,18 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
+// --- Apply EF Core migrations on startup (dev only) ------------------------
+// In production we run migrations explicitly from CI/CD; auto-applying at
+// process start in prod is a foot-gun (concurrent instances racing).
+if (app.Environment.IsDevelopment())
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AireqDbContext>();
+    app.Logger.LogInformation("Applying EF Core migrations…");
+    await db.Database.MigrateAsync();
+    app.Logger.LogInformation("Migrations applied. Schema is ready.");
+}
+
 // --- Pipeline --------------------------------------------------------------
 app.UseSerilogRequestLogging();
 app.UseCors();
@@ -90,6 +106,7 @@ if (app.Environment.IsDevelopment())
 
 // --- Endpoints -------------------------------------------------------------
 app.MapHealthEndpoints();
+app.MapDbStatusEndpoints();
 
 app.Run();
 
