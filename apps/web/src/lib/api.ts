@@ -12,6 +12,13 @@ export interface HealthResponse {
   timestamp: string;
 }
 
+export interface DbStatusResponse {
+  appliedMigrations: string[];
+  pendingMigrations: string[];
+  rowCounts: Record<string, number>;
+  timestamp: string;
+}
+
 export class ApiError extends Error {
   constructor(public readonly status: number, message: string) {
     super(message);
@@ -39,4 +46,5 @@ async function request<T>(path: string, init?: RequestInit, timeoutMs = 5_000): 
 
 export const api = {
   health: () => request<HealthResponse>("/health/ready"),
+  dbStatus: () => request<DbStatusResponse>("/api/db/status", undefined, 10_000),
 };

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { DbStatusTile } from "@/components/db-status-tile";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -41,6 +42,10 @@ export default function DashboardPage() {
         <Card label="Recruiter replies" value="—" hint="ingested in AIRMVP1-401" />
         <Card label="Avg ATS score" value="—" hint="computed in AIRMVP1-302" />
       </section>
+
+      <div className="mt-6">
+        <DbStatusTile />
+      </div>
 
       <section
         aria-labelledby="next-steps-heading"
