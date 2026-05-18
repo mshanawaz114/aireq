@@ -10,11 +10,18 @@
 
 using Aireq.Api.Data;
 using Aireq.Api.Endpoints;
+using Aireq.Shared.Db;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using System.Text;
+
+// Load .env.local from repo root (dev only) before building the host so values
+// land in Environment.GetEnvironmentVariable() and IConfiguration alike.
+// Production deployments inject env vars via the platform — TraversePath finds
+// nothing and exits silently in that case.
+DotNetEnv.Env.TraversePath().Load(".env.local");
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -26,10 +33,13 @@ builder.Host.UseSerilog((ctx, lc) => lc
     .WriteTo.Async(a => a.Console()));
 
 // --- Configuration ---------------------------------------------------------
-var dbConnection = builder.Configuration["DATABASE_URL_DEV"]
-                   ?? builder.Configuration.GetConnectionString("Default")
-                   ?? throw new InvalidOperationException(
-                       "DATABASE_URL_DEV not configured. Copy .env.example to .env.local and set it.");
+var rawDb = builder.Configuration["DATABASE_URL_DEV"]
+            ?? builder.Configuration.GetConnectionString("Default")
+            ?? throw new InvalidOperationException(
+                "DATABASE_URL_DEV not configured. Copy .env.example to .env.local and set it.");
+
+// Neon's URI form -> canonical key=value form that all Npgsql code paths accept.
+var dbConnection = NeonConnectionString.Normalize(rawDb);
 
 // --- Services --------------------------------------------------------------
 builder.Services.AddDbContext<AireqDbContext>(opts =>

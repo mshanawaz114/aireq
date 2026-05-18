@@ -16,11 +16,15 @@
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.0" />
     <PackageVersion Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.0" />
     <PackageVersion Include="Npgsql.EntityFrameworkCore.PostgreSQL" Version="10.0.0" />
-    <PackageVersion Include="Pgvector" Version="0.3.0" />
+    <PackageVersion Include="Pgvector" Version="0.3.2" />
     <PackageVersion Include="Pgvector.EntityFrameworkCore" Version="0.3.0" />
 
     <!-- Pin Newtonsoft.Json to override Hangfire's transitive 11.0.1 (NU1903 CVE). -->
     <PackageVersion Include="Newtonsoft.Json" Version="13.0.3" />
+
+    <!-- .env.local loader — parses .env files inside .NET so shell-special chars
+         (& ? = in URLs) don't need quoting. -->
+    <PackageVersion Include="DotNetEnv" Version="3.1.1" />
 
     <!-- Hangfire (background jobs) -->
     <PackageVersion Include="Hangfire.AspNetCore" Version="1.8.21" />

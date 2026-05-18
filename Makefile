@@ -30,23 +30,21 @@ dev: ## Run api + worker + web with hot reload (uses 'concurrently'-style output
 	@printf "$(COLOR_BLUE)Booting api + worker + web…$(COLOR_RESET)\n"
 	@( $(MAKE) api & $(MAKE) worker & $(MAKE) web & wait )
 
-# Load .env.local into the recipe shell so all three targets see DATABASE_URL_DEV etc.
-# Sourcing happens inline (one shell) — Make runs each recipe line in a separate
-# shell by default, so we chain with `&& \` rather than relying on .ONESHELL:.
-define LOAD_ENV
-set -a; [ -f .env.local ] && . ./.env.local; set +a
-endef
+# NOTE on env loading: we used to source .env.local into the recipe shell, but
+# that breaks on unquoted special chars (e.g. RESEND_FROM=Aireq <noreply@…>).
+# Instead:
+#   - .NET projects use the DotNetEnv NuGet package which parses .env.local
+#     directly (handles & < > = without quoting).
+#   - Next.js auto-loads apps/web/.env.local. If you want NEXT_PUBLIC_* vars
+#     in the web app, mirror them there (we'll automate this in AIR0002).
 
-api: ## Run the API project with hot reload.
-	@$(LOAD_ENV) && \
-	cd apps/api/Aireq.Api && dotnet watch run --no-launch-profile
+api: ## Run the API project with hot reload (port 5080 via launchSettings).
+	cd apps/api/Aireq.Api && dotnet watch run
 
-worker: ## Run the worker project with hot reload.
-	@$(LOAD_ENV) && \
-	cd apps/worker/Aireq.Worker && dotnet watch run --no-launch-profile
+worker: ## Run the worker project with hot reload (port 5090 via launchSettings).
+	cd apps/worker/Aireq.Worker && dotnet watch run
 
-web: ## Run the Next.js web app with hot reload (Next.js auto-loads its own .env.local too).
-	@$(LOAD_ENV) && \
+web: ## Run the Next.js web app with hot reload (port 3000).
 	cd apps/web && pnpm dev
 
 # -----------------------------------------------------------------------------
