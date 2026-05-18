@@ -2,7 +2,7 @@
 // component reads the same surface. Replaced by a typed client (generated
 // from OpenAPI) in AIRMVP1-102.
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5080";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5180";
 
 export interface HealthResponse {
   status: "ok" | "degraded" | "down";
