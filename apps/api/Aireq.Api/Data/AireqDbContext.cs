@@ -116,6 +116,12 @@ public sealed class AireqDbContext(
                 b.Property(x => x.ParsedJson).HasColumnType("jsonb");
                 b.Property(x => x.Embedding).HasColumnType("vector(1536)");
             }
+            else
+            {
+                // InMemory / SQLite test providers can't map Pgvector.Vector.
+                // Tests don't exercise vector search; safe to drop the column.
+                b.Ignore(x => x.Embedding);
+            }
             b.Property(x => x.OriginalFilename).HasMaxLength(255);
             b.HasIndex(x => new { x.ConsultantId, x.Version }).IsUnique();
             b.HasOne(x => x.Consultant).WithMany(c => c.Resumes).HasForeignKey(x => x.ConsultantId);
@@ -155,6 +161,11 @@ public sealed class AireqDbContext(
             {
                 b.Property(x => x.RawJson).HasColumnType("jsonb");
                 b.Property(x => x.Embedding).HasColumnType("vector(1536)");
+            }
+            else
+            {
+                // InMemory / SQLite test providers can't map Pgvector.Vector.
+                b.Ignore(x => x.Embedding);
             }
             b.HasIndex(x => new { x.Source, x.SourceExternalId }).IsUnique();
             b.HasIndex(x => x.PostedAt);
