@@ -11,18 +11,27 @@ import {
   Inbox,
   AlertTriangle,
   Settings,
+  type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/cn";
 
-const nav = [
-  { href: "/dashboard",   label: "Dashboard",         Icon: LayoutDashboard },
+interface NavItem {
+  href: string;
+  label: string;
+  Icon: LucideIcon;
+  /** Optional pill rendered on the right (e.g. unread count). */
+  badge?: string;
+}
+
+const nav: readonly NavItem[] = [
+  { href: "/dashboard",   label: "Dashboard",          Icon: LayoutDashboard },
   { href: "/profile",     label: "Consultant Profile", Icon: UserCircle2 },
   { href: "/matches",     label: "Job Matches",        Icon: Search, badge: "—" },
   { href: "/tailor",      label: "Tailor & Apply",     Icon: Wand2 },
   { href: "/submissions", label: "Submissions",        Icon: FileText },
   { href: "/inbox",       label: "Recruiter Inbox",    Icon: Inbox },
   { href: "/escalations", label: "Escalations",        Icon: AlertTriangle },
-] as const;
+];
 
 export function Sidebar() {
   const pathname = usePathname();
