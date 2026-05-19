@@ -15,8 +15,19 @@ public sealed class User : ITimestamped
 
     public required string Email { get; set; }
 
+    /// <summary>
+    /// PHC-formatted password hash produced by <see cref="Microsoft.AspNetCore.Identity.PasswordHasher{TUser}"/>.
+    /// Never logged. Never compared with == — use <c>PasswordHasher.VerifyHashedPassword</c>.
+    /// </summary>
+    public string PasswordHash { get; set; } = string.Empty;
+
+    /// <summary>Display name shown in the UI (not used for auth).</summary>
+    public string? DisplayName { get; set; }
+
     /// <summary>owner | admin | viewer.</summary>
     public string Role { get; set; } = "owner";
+
+    public DateTimeOffset? LastLoginAt { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
