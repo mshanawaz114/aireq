@@ -1,0 +1,83 @@
+# .pre-commit-config.yaml — Aireq's pre-commit hook configuration.
+#
+# Install: ./scripts/install-hooks.sh   (one-time, idempotent)
+# Manually run all hooks: pre-commit run --all-files
+#
+# What runs on every commit:
+#   - whitespace / EOF / file-size hygiene (cheap, always-on)
+#   - gitleaks: never let a secret land in git history
+#   - dotnet format (only on staged .cs files)
+#   - prettier (only on staged .ts/.tsx/.css/.md files)
+#
+# Heavy steps (full build, full test, axe-core) are NOT run pre-commit —
+# they live in CI. Pre-commit must stay under ~3 seconds on a typical change.
+#
+# Refs: AIR0003
+
+minimum_pre_commit_version: "3.5.0"
+default_install_hook_types: [pre-commit, commit-msg]
+default_stages: [pre-commit]
+
+repos:
+  # ───────── File hygiene ─────────
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+        exclude: '\.md$'
+      - id: end-of-file-fixer
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ["--maxkb=512"]
+      - id: check-yaml
+      - id: check-json
+      - id: check-toml
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+
+  # ───────── Secret scanning ─────────
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.18.4
+    hooks:
+      - id: gitleaks
+        # Use repo config (.gitleaks.toml) — same one CI uses.
+        args: ["protect", "--staged", "--config=.gitleaks.toml", "--redact", "--verbose"]
+
+  # ───────── Commit message convention ─────────
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v3.4.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]
+        args:
+          - --strict
+          - feat
+          - fix
+          - chore
+          - docs
+          - test
+          - refactor
+          - perf
+          - build
+          - ci
+          - style
+          - security
+
+  # ───────── Local hooks (.NET + web formatters) ─────────
+  - repo: local
+    hooks:
+      - id: dotnet-format
+        name: dotnet format (changed .cs files)
+        # `--include` accepts a space-separated list of paths relative to the
+        # solution root. pre-commit gives us those in $@.
+        entry: bash -c 'if command -v dotnet >/dev/null 2>&1; then dotnet format Aireq.sln --no-restore --include "$@"; else echo "dotnet not installed; skip"; fi' --
+        language: system
+        types_or: [c#]
+        pass_filenames: true
+
+      - id: prettier-web
+        name: prettier (changed apps/web files)
+        entry: bash -c 'cd apps/web && pnpm exec prettier --write --ignore-unknown "$@"' --
+        language: system
+        files: ^apps/web/.+\.(ts|tsx|js|jsx|css|md|json|yaml|yml)$
+        pass_filenames: true

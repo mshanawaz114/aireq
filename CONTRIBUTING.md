@@ -23,6 +23,30 @@ git clone git@github.com:mshanawaz114/aireq.git && cd aireq
 make dev
 ```
 
+## 2a. Install pre-commit hooks (one-time)
+
+```bash
+./scripts/install-hooks.sh    # idempotent; safe to re-run
+```
+
+The hooks run on every `git commit` (under ~3 seconds) and enforce:
+
+- **gitleaks** — refuses to land a secret. The exact same config (`.gitleaks.toml`) runs in CI as a second line of defence.
+- **Conventional Commits** — your commit message must start with `feat: …`, `fix(api): …`, `chore: …`, etc. See [`memory.md` §12a](memory.md#12a-branch--commit-conventions).
+- **dotnet format** on changed `.cs` files.
+- **prettier** on changed `apps/web/**` files.
+- Whitespace / EOL / large-file hygiene.
+
+If a hook auto-fixes a file, your commit is **rejected**; re-stage and commit again. This is intentional — it forces you to look at what changed.
+
+To run the full hook suite against the entire tree (e.g. before a big PR):
+
+```bash
+pre-commit run --all-files
+```
+
+To bypass hooks in a true emergency (then immediately open an incident): `git commit --no-verify`.
+
 ## 3. Pick a Story or open one
 
 Every change must trace to a Story ID from [`PLAN.md`](PLAN.md). If your idea isn't covered:
