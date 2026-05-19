@@ -25,6 +25,13 @@
     <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
     <PackageReference Include="Pgvector.EntityFrameworkCore" />
 
+    <!-- Background jobs (client only — the worker hosts the server). -->
+    <PackageReference Include="Hangfire.AspNetCore" />
+    <PackageReference Include="Hangfire.PostgreSql" />
+
+    <!-- Object storage (resumes, tailored resumes). -->
+    <PackageReference Include="Azure.Storage.Blobs" />
+
     <!-- Health -->
     <PackageReference Include="AspNetCore.HealthChecks.NpgSql" />
 

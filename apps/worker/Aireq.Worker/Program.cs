@@ -3,10 +3,12 @@
 //   - Serilog
 //   - Hangfire (Postgres-backed scheduler + server)
 //   - Hangfire dashboard at /hangfire (dev only; gate behind auth in AIRMVP1-103)
-// First real jobs land in AIRMVP1-104 (resume-parse) and AIRMVP1-201 (job-ingestion).
-// Refs: AIRMVP1-101
+//   - IResumeParser (placeholder impl; real Claude parsing lands in AIRMVP1-105)
+// Refs: AIRMVP1-101, AIRMVP1-104
 
 using Aireq.Shared.Db;
+using Aireq.Shared.Jobs;
+using Aireq.Worker.Resumes;
 using Hangfire;
 using Hangfire.PostgreSql;
 using Serilog;
@@ -43,15 +45,25 @@ builder.Services.AddHangfireServer(opts =>
     opts.WorkerCount = Environment.ProcessorCount;
 });
 
+// --- Job implementations ---------------------------------------------------
+// Hangfire resolves these from DI when it picks a job off the queue.
+// Scoped so each job invocation gets fresh state (HttpClient, DbContext, etc.
+// will be added in AIRMVP1-105 when the real parser lands).
+builder.Services.AddScoped<IResumeParser, ResumeParser>();
+
 var app = builder.Build();
 
 app.UseSerilogRequestLogging();
 
-// NOTE: Hangfire dashboard intentionally NOT mounted here for AIRMVP1-101.
-// Adding it requires extra DI registration that's flaky on initial scaffold;
-// we wire it properly in AIRMVP1-104 alongside the first real background jobs
-// (resume parsing). Until then the server still runs, jobs still execute —
-// you just can't view them through a web UI.
+// Hangfire dashboard — read-only here (no .RequireAuthorization on the worker
+// for now; the worker only listens on the internal port). When the worker
+// exposes a public URL (AIRMVP1-107 deploy), wire JWT auth on this map.
+app.UseHangfireDashboard("/hangfire", new DashboardOptions
+{
+    // Anyone hitting the worker port can see it in dev; tighten in deploy story.
+    DashboardTitle = "Aireq · jobs",
+});
+
 app.MapGet("/health/live", () => Results.Ok(new { status = "ok", service = "worker" }));
 
 app.Run();
