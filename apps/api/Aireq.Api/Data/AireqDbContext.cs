@@ -10,13 +10,13 @@
 //   - Map Pgvector.Vector to vector(1536) columns.
 //   - Auto-set CreatedAt / UpdatedAt for ITimestamped entities on SaveChanges.
 //   - Apply soft-delete query filter for ISoftDelete entities.
+//   - **Apply multi-tenant query filter on User, Consultant, Match** so that
+//     every query is automatically scoped to the current ITenantContext.TenantId.
+//     Auth endpoints and admin reads use .IgnoreQueryFilters() explicitly.
 //
-// What's intentionally NOT here yet:
-//   - Multi-tenant query filter (lands in AIRMVP1-103 once auth gives us a
-//     tenant_id to filter on).
-//
-// Refs: AIRMVP1-102
+// Refs: AIRMVP1-102, AIRMVP1-103
 
+using Aireq.Api.Auth;
 using Aireq.Api.Data.Common;
 using Aireq.Api.Data.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -28,8 +28,14 @@ using RegexOptions = System.Text.RegularExpressions.RegexOptions;
 
 namespace Aireq.Api.Data;
 
-public sealed class AireqDbContext(DbContextOptions<AireqDbContext> options) : DbContext(options)
+public sealed class AireqDbContext(
+    DbContextOptions<AireqDbContext> options,
+    ITenantContext? tenantContext = null) : DbContext(options)
 {
+    // ITenantContext may be null in design-time tooling (dotnet ef) where no
+    // request scope exists. In that case the query filter passes all rows
+    // through — design-time only ever reads schema, never user data.
+    private readonly ITenantContext? _tenant = tenantContext;
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<User> Users => Set<User>();
     public DbSet<Consultant> Consultants => Set<Consultant>();
@@ -46,8 +52,16 @@ public sealed class AireqDbContext(DbContextOptions<AireqDbContext> options) : D
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
+        // Provider-aware config: Postgres-specific bits (jsonb, vector(1536),
+        // pgvector extension) are skipped for non-Npgsql providers so unit
+        // tests can run against EF InMemory.
+        var isNpgsql = this.Database.IsNpgsql();
+
         // Extensions.
-        mb.HasPostgresExtension("vector");
+        if (isNpgsql)
+        {
+            mb.HasPostgresExtension("vector");
+        }
 
         // ---- Tenant ----
         mb.Entity<Tenant>(b =>
@@ -63,9 +77,17 @@ public sealed class AireqDbContext(DbContextOptions<AireqDbContext> options) : D
         {
             b.HasKey(x => x.Id);
             b.Property(x => x.Email).IsRequired().HasMaxLength(254);
+            b.Property(x => x.PasswordHash).IsRequired().HasMaxLength(512);
+            b.Property(x => x.DisplayName).HasMaxLength(200);
             b.Property(x => x.Role).IsRequired().HasMaxLength(16);
-            b.HasIndex(x => new { x.TenantId, x.Email }).IsUnique();
+            b.HasIndex(x => x.Email).IsUnique();
+            b.HasIndex(x => new { x.TenantId, x.Email });
             b.HasOne(x => x.Tenant).WithMany(t => t.Users).HasForeignKey(x => x.TenantId);
+            // Tenant-scoped read. Auth endpoints (signup / login) deliberately
+            // bypass this with .IgnoreQueryFilters() since they run before the
+            // tenant context exists.
+            b.HasQueryFilter(x =>
+                _tenant == null || _tenant.TenantId == null || x.TenantId == _tenant.TenantId);
         });
 
         // ---- Consultant ----
@@ -79,15 +101,21 @@ public sealed class AireqDbContext(DbContextOptions<AireqDbContext> options) : D
             b.Property(x => x.RateTargetUsdHourly).HasPrecision(10, 2);
             b.HasIndex(x => x.TenantId);
             b.HasOne(x => x.Tenant).WithMany(t => t.Consultants).HasForeignKey(x => x.TenantId);
-            b.HasQueryFilter(x => x.DeletedAt == null);
+            // Combined filter: not-soft-deleted AND tenant matches current request.
+            b.HasQueryFilter(x =>
+                x.DeletedAt == null
+                && (_tenant == null || _tenant.TenantId == null || x.TenantId == _tenant.TenantId));
         });
 
         // ---- Resume ----
         mb.Entity<Resume>(b =>
         {
             b.HasKey(x => x.Id);
-            b.Property(x => x.ParsedJson).HasColumnType("jsonb");
-            b.Property(x => x.Embedding).HasColumnType("vector(1536)");
+            if (isNpgsql)
+            {
+                b.Property(x => x.ParsedJson).HasColumnType("jsonb");
+                b.Property(x => x.Embedding).HasColumnType("vector(1536)");
+            }
             b.Property(x => x.OriginalFilename).HasMaxLength(255);
             b.HasIndex(x => new { x.ConsultantId, x.Version }).IsUnique();
             b.HasOne(x => x.Consultant).WithMany(c => c.Resumes).HasForeignKey(x => x.ConsultantId);
@@ -123,8 +151,11 @@ public sealed class AireqDbContext(DbContextOptions<AireqDbContext> options) : D
             b.Property(x => x.Company).IsRequired().HasMaxLength(200);
             b.Property(x => x.Location).HasMaxLength(200);
             b.Property(x => x.Description).HasMaxLength(50_000);
-            b.Property(x => x.RawJson).HasColumnType("jsonb");
-            b.Property(x => x.Embedding).HasColumnType("vector(1536)");
+            if (isNpgsql)
+            {
+                b.Property(x => x.RawJson).HasColumnType("jsonb");
+                b.Property(x => x.Embedding).HasColumnType("vector(1536)");
+            }
             b.HasIndex(x => new { x.Source, x.SourceExternalId }).IsUnique();
             b.HasIndex(x => x.PostedAt);
             b.HasIndex(x => x.IsActive);
@@ -134,20 +165,22 @@ public sealed class AireqDbContext(DbContextOptions<AireqDbContext> options) : D
         mb.Entity<Match>(b =>
         {
             b.HasKey(x => x.Id);
-            b.Property(x => x.ReasoningJson).HasColumnType("jsonb");
+            if (isNpgsql) b.Property(x => x.ReasoningJson).HasColumnType("jsonb");
             b.Property(x => x.Status).HasConversion<string>().HasMaxLength(16);
             b.HasIndex(x => new { x.TenantId, x.Status });
             b.HasIndex(x => new { x.ConsultantId, x.JobId }).IsUnique();
             b.HasOne(x => x.Tenant).WithMany(t => t.Matches).HasForeignKey(x => x.TenantId);
             b.HasOne(x => x.Consultant).WithMany(c => c.Matches).HasForeignKey(x => x.ConsultantId);
             b.HasOne(x => x.Job).WithMany(j => j.Matches).HasForeignKey(x => x.JobId);
+            b.HasQueryFilter(x =>
+                _tenant == null || _tenant.TenantId == null || x.TenantId == _tenant.TenantId);
         });
 
         // ---- TailoredResume ----
         mb.Entity<TailoredResume>(b =>
         {
             b.HasKey(x => x.Id);
-            b.Property(x => x.DiffJson).HasColumnType("jsonb");
+            if (isNpgsql) b.Property(x => x.DiffJson).HasColumnType("jsonb");
             b.HasOne(x => x.Match).WithMany(m => m.TailoredResumes).HasForeignKey(x => x.MatchId);
         });
 
@@ -157,7 +190,7 @@ public sealed class AireqDbContext(DbContextOptions<AireqDbContext> options) : D
             b.HasKey(x => x.Id);
             b.Property(x => x.Channel).HasConversion<string>().HasMaxLength(16);
             b.Property(x => x.ResponseStatus).HasMaxLength(32);
-            b.Property(x => x.ResponsePayloadJson).HasColumnType("jsonb");
+            if (isNpgsql) b.Property(x => x.ResponsePayloadJson).HasColumnType("jsonb");
             b.HasIndex(x => x.SubmittedAt);
             b.HasOne(x => x.Match).WithMany(m => m.Submissions).HasForeignKey(x => x.MatchId);
         });

@@ -1,0 +1,2 @@
+Cowork sandbox write-probe. Safe to delete.
+If you see this file, the Write tool reached the mount correctly.
