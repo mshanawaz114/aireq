@@ -61,6 +61,7 @@ public sealed class AireqDbContext(
     public DbSet<RecruiterThread> RecruiterThreads => Set<RecruiterThread>();
     public DbSet<Message> Messages => Set<Message>();
     public DbSet<Escalation> Escalations => Set<Escalation>();
+    public DbSet<LlmCall> LlmCalls => Set<LlmCall>();
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
@@ -253,6 +254,25 @@ public sealed class AireqDbContext(
             b.HasIndex(x => new { x.MatchId, x.CreatedAt });
             b.HasIndex(x => x.ResolvedAt);
             b.HasOne(x => x.Match).WithMany(m => m.Escalations).HasForeignKey(x => x.MatchId);
+        });
+
+        // ---- LlmCall (audit log + budget source-of-truth) ----
+        // Deliberately NOT tenant-filtered: the gateway must read calls across
+        // tenants to sum budgets, and admin reporting needs the same.
+        // Cross-tenant reads from product code MUST go through .Where(x => x.TenantId == ...)
+        // explicitly; reviewers will flag missing filters in PR review.
+        mb.Entity<LlmCall>(b =>
+        {
+            b.HasKey(x => x.Id);
+            b.Property(x => x.Model).IsRequired().HasMaxLength(64);
+            b.Property(x => x.Purpose).IsRequired().HasMaxLength(64);
+            b.Property(x => x.CostUsdEstimate).HasPrecision(12, 6);
+            b.Property(x => x.PromptText).IsRequired().HasMaxLength(LlmCall.MaxPayloadChars);
+            b.Property(x => x.ResponseText).IsRequired().HasMaxLength(LlmCall.MaxPayloadChars);
+            // Budget queries: (tenant_id, model, created_at) covering index.
+            b.HasIndex(x => new { x.TenantId, x.Model, x.CreatedAt });
+            // For per-purpose cost analytics (and the dev dashboard).
+            b.HasIndex(x => new { x.Purpose, x.CreatedAt });
         });
 
         ApplySnakeCaseNaming(mb);
