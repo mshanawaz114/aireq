@@ -23,6 +23,8 @@
     <PackageReference Include="FluentAssertions" />
     <PackageReference Include="Microsoft.EntityFrameworkCore.InMemory" />
     <PackageReference Include="Microsoft.AspNetCore.Mvc.Testing" />
+    <!-- Hangfire types (IBackgroundJobClient, Job, IState) come in transitively
+         via the Aireq.Api project reference, which has Hangfire.AspNetCore. -->
   </ItemGroup>
 
 </Project>

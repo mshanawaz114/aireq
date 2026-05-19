@@ -12,8 +12,13 @@ using Aireq.Api.Auth;
 using Aireq.Api.Data;
 using Aireq.Api.Data.Entities;
 using Aireq.Api.Endpoints;
+using Aireq.Api.Resumes;
+using Aireq.Api.Storage;
 using Aireq.Shared.Db;
+using Hangfire;
+using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
@@ -89,6 +94,28 @@ builder.Services.AddScoped<ITenantContext, HttpTenantContext>();
 builder.Services.AddSingleton<JwtTokenService>();
 builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
 
+// --- Blob storage (resumes, tailored resumes) ------------------------------
+// Singleton: the BlobContainerClient inside is thread-safe and pools its own
+// HttpClient — making one per request is wasteful.
+builder.Services.AddSingleton<IBlobStorage, AzureBlobStorage>();
+builder.Services.AddScoped<UploadResumeService>();
+
+// Allow multipart bodies up to 10 MB — matches UploadResumeService.MaxBytes.
+builder.Services.Configure<FormOptions>(opts =>
+{
+    opts.MultipartBodyLengthLimit = UploadResumeService.MaxBytes;
+});
+
+// --- Hangfire (client only — the worker process runs the server) -----------
+// The API enqueues jobs; the worker (apps/worker) actually executes them.
+// AddHangfire here registers IBackgroundJobClient + IRecurringJobManager so
+// endpoints / services can schedule work.
+builder.Services.AddHangfire(cfg => cfg
+    .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
+    .UseSimpleAssemblyNameTypeSerializer()
+    .UseRecommendedSerializerSettings()
+    .UsePostgreSqlStorage(c => c.UseNpgsqlConnection(dbConnection)));
+
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
@@ -120,6 +147,7 @@ if (app.Environment.IsDevelopment())
 app.MapHealthEndpoints();
 app.MapDbStatusEndpoints();
 app.MapAuthEndpoints();
+app.MapResumeEndpoints();
 
 app.Run();
 
