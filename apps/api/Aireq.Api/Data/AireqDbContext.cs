@@ -36,6 +36,18 @@ public sealed class AireqDbContext(
     // request scope exists. In that case the query filter passes all rows
     // through — design-time only ever reads schema, never user data.
     private readonly ITenantContext? _tenant = tenantContext;
+
+    /// <summary>
+    /// Current tenant id, surfaced as a DbContext property so EF Core's query
+    /// compiler treats it as a query parameter and **re-evaluates per query**.
+    /// If we referenced <c>_tenant.TenantId</c> directly inside query filters,
+    /// EF would parameterize the chain off the first observed value and cache
+    /// it for the lifetime of the DbContext — so any mid-context tenant switch
+    /// (the test pattern in <c>QueryFilterTests</c>) would silently return
+    /// stale-tenant rows.
+    /// </summary>
+    public Guid? CurrentTenantId => _tenant?.TenantId;
+
     public DbSet<Tenant> Tenants => Set<Tenant>();
     public DbSet<User> Users => Set<User>();
     public DbSet<Consultant> Consultants => Set<Consultant>();
@@ -85,9 +97,10 @@ public sealed class AireqDbContext(
             b.HasOne(x => x.Tenant).WithMany(t => t.Users).HasForeignKey(x => x.TenantId);
             // Tenant-scoped read. Auth endpoints (signup / login) deliberately
             // bypass this with .IgnoreQueryFilters() since they run before the
-            // tenant context exists.
+            // tenant context exists. Uses the CurrentTenantId property so EF
+            // re-evaluates per query (see property doc on AireqDbContext).
             b.HasQueryFilter(x =>
-                _tenant == null || _tenant.TenantId == null || x.TenantId == _tenant.TenantId);
+                CurrentTenantId == null || x.TenantId == CurrentTenantId);
         });
 
         // ---- Consultant ----
@@ -104,7 +117,7 @@ public sealed class AireqDbContext(
             // Combined filter: not-soft-deleted AND tenant matches current request.
             b.HasQueryFilter(x =>
                 x.DeletedAt == null
-                && (_tenant == null || _tenant.TenantId == null || x.TenantId == _tenant.TenantId));
+                && (CurrentTenantId == null || x.TenantId == CurrentTenantId));
         });
 
         // ---- Resume ----
@@ -184,7 +197,7 @@ public sealed class AireqDbContext(
             b.HasOne(x => x.Consultant).WithMany(c => c.Matches).HasForeignKey(x => x.ConsultantId);
             b.HasOne(x => x.Job).WithMany(j => j.Matches).HasForeignKey(x => x.JobId);
             b.HasQueryFilter(x =>
-                _tenant == null || _tenant.TenantId == null || x.TenantId == _tenant.TenantId);
+                CurrentTenantId == null || x.TenantId == CurrentTenantId);
         });
 
         // ---- TailoredResume ----
