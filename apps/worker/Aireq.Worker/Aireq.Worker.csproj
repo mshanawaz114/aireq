@@ -9,6 +9,9 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\..\packages\shared\Aireq.Shared\Aireq.Shared.csproj" />
+    <!-- AIRMVP1-105: AireqDbContext + LlmCall + IBlobStorage live in the API project.
+         Worker references the API for these shared types until we extract Aireq.Data. -->
+    <ProjectReference Include="..\..\api\Aireq.Api\Aireq.Api.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -20,6 +23,9 @@
     <PackageReference Include="Serilog.Sinks.Console" />
     <PackageReference Include="Serilog.Sinks.Async" />
     <PackageReference Include="Microsoft.Extensions.Http.Resilience" />
+
+    <!-- AIRMVP1-105: PDF text extraction for the resume parser. -->
+    <PackageReference Include="PdfPig" />
 
     <!-- .env.local loader (dev convenience) -->
     <PackageReference Include="DotNetEnv" />

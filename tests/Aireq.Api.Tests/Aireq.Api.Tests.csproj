@@ -14,6 +14,8 @@
   <ItemGroup>
     <ProjectReference Include="..\..\apps\api\Aireq.Api\Aireq.Api.csproj" />
     <ProjectReference Include="..\..\packages\shared\Aireq.Shared\Aireq.Shared.csproj" />
+    <!-- AIRMVP1-105: AnthropicLlmGateway + ResumeParser live in the worker. -->
+    <ProjectReference Include="..\..\apps\worker\Aireq.Worker\Aireq.Worker.csproj" />
   </ItemGroup>
 
   <ItemGroup>
