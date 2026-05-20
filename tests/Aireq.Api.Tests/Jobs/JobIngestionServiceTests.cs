@@ -34,11 +34,12 @@ public sealed class JobIngestionServiceTests
         return new AireqDbContext(options, new StubTenantContext());
     }
 
-    private static JobIngestionService Build(AireqDbContext db, IEnumerable<IJobSource> sources)
+    private static JobIngestionService Build(
+        AireqDbContext db, IEnumerable<IJobSource> sources, params string[] queries)
     {
         var opts = Options.Create(new JobIngestionOptions
         {
-            Queries = new() { "engineer" }, // single query keeps counts predictable
+            Queries = queries.Length > 0 ? queries.ToList() : new() { "engineer" },
             MaxResultsPerQuery = 50,
         });
         return new JobIngestionService(sources, db, opts, NullLogger<JobIngestionService>.Instance);
@@ -119,6 +120,24 @@ public sealed class JobIngestionServiceTests
 
         report.TotalInserted.Should().Be(0);
         (await db.Jobs.CountAsync()).Should().Be(0);
+    }
+
+    [Fact]
+    public async Task Keyword_source_runs_per_query_full_board_source_runs_once()
+    {
+        var dbName = $"ingest-{Guid.NewGuid()}";
+        await using var db = NewDb(dbName);
+
+        var keyword = new FakeJobSource("adzuna",
+            new[] { FakeJobSource.Job("adzuna", "K1") }, keywordDriven: true);
+        var fullBoard = new FakeJobSource("greenhouse",
+            new[] { FakeJobSource.Job("greenhouse", "G1") }, keywordDriven: false);
+
+        // Three configured queries.
+        await Build(db, new[] { keyword, fullBoard }, "a", "b", "c").RunAsync(CancellationToken.None);
+
+        keyword.FetchCount.Should().Be(3, "keyword sources run once per query");
+        fullBoard.FetchCount.Should().Be(1, "full-board sources run once per pass regardless of queries");
     }
 
     [Fact]
