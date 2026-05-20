@@ -121,6 +121,13 @@ builder.Services.AddScoped<JobEmbedder>();
 builder.Services.AddScoped<ResumeEmbedder>();
 builder.Services.AddScoped<IEmbeddingRunner, EmbeddingRunner>();
 
+// Matching (AIRMVP1-204b). pgvector cosine + rule filters -> matches.
+builder.Services.Configure<MatchingOptions>(
+    builder.Configuration.GetSection(MatchingOptions.ConfigKey));
+builder.Services.AddScoped<IJobCandidateFinder, PgVectorJobCandidateFinder>();
+builder.Services.AddScoped<MatchingService>();
+builder.Services.AddScoped<IMatchingRunner, MatchingRunner>();
+
 // --- Job implementations --------------------------------------------------
 // Hangfire resolves these from DI when it picks a job off the queue.
 // Scoped so each invocation gets fresh DbContext / HttpClient / etc.
@@ -163,6 +170,12 @@ if (app.Environment.IsDevelopment())
         var id = jobs.Enqueue<IEmbeddingRunner>(r => r.RunAsync(CancellationToken.None));
         return Results.Ok(new { enqueued = id });
     });
+
+    app.MapPost("/jobs/match", (IBackgroundJobClient jobs) =>
+    {
+        var id = jobs.Enqueue<IMatchingRunner>(r => r.RunAsync(CancellationToken.None));
+        return Results.Ok(new { enqueued = id });
+    });
 }
 
 // --- Recurring jobs --------------------------------------------------------
@@ -191,6 +204,13 @@ using (var scope = app.Services.CreateScope())
         "embedding-pass",
         runner => runner.RunAsync(CancellationToken.None),
         embeddingOpts.Cron);
+
+    var matchingOpts = scope.ServiceProvider
+        .GetRequiredService<Microsoft.Extensions.Options.IOptions<MatchingOptions>>().Value;
+    recurring.AddOrUpdate<IMatchingRunner>(
+        "matching-pass",
+        runner => runner.RunAsync(CancellationToken.None),
+        matchingOpts.Cron);
 }
 
 app.Run();
