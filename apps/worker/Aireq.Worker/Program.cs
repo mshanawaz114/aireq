@@ -128,6 +128,12 @@ builder.Services.AddScoped<IJobCandidateFinder, PgVectorJobCandidateFinder>();
 builder.Services.AddScoped<MatchingService>();
 builder.Services.AddScoped<IMatchingRunner, MatchingRunner>();
 
+// LLM match scoring + reasoning (AIRMVP1-205).
+builder.Services.Configure<MatchScoringOptions>(
+    builder.Configuration.GetSection(MatchScoringOptions.ConfigKey));
+builder.Services.AddScoped<MatchScorer>();
+builder.Services.AddScoped<IMatchScoringRunner, MatchScoringRunner>();
+
 // --- Job implementations --------------------------------------------------
 // Hangfire resolves these from DI when it picks a job off the queue.
 // Scoped so each invocation gets fresh DbContext / HttpClient / etc.
@@ -176,6 +182,12 @@ if (app.Environment.IsDevelopment())
         var id = jobs.Enqueue<IMatchingRunner>(r => r.RunAsync(CancellationToken.None));
         return Results.Ok(new { enqueued = id });
     });
+
+    app.MapPost("/jobs/score", (IBackgroundJobClient jobs) =>
+    {
+        var id = jobs.Enqueue<IMatchScoringRunner>(r => r.RunAsync(CancellationToken.None));
+        return Results.Ok(new { enqueued = id });
+    });
 }
 
 // --- Recurring jobs --------------------------------------------------------
@@ -211,6 +223,13 @@ using (var scope = app.Services.CreateScope())
         "matching-pass",
         runner => runner.RunAsync(CancellationToken.None),
         matchingOpts.Cron);
+
+    var scoringOpts = scope.ServiceProvider
+        .GetRequiredService<Microsoft.Extensions.Options.IOptions<MatchScoringOptions>>().Value;
+    recurring.AddOrUpdate<IMatchScoringRunner>(
+        "match-scoring-pass",
+        runner => runner.RunAsync(CancellationToken.None),
+        scoringOpts.Cron);
 }
 
 app.Run();
