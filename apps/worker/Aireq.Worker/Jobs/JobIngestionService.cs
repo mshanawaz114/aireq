@@ -96,18 +96,26 @@ public sealed class JobIngestionService(
 
         foreach (var r in raws)
         {
+            var title = Trim(r.Title, 300)!;
+            var company = Trim(r.Company, 200)!;
+            var location = Trim(r.Location, 200);
+            var description = Trim(r.Description, 50_000);
+            // Cross-source dedup fingerprint (AIRMVP1-203). Computed on the
+            // trimmed values so it's stable regardless of source formatting.
+            var contentHash = JobContentHash.Compute(company, title, location, description);
+
             if (existing.TryGetValue(r.SourceExternalId, out var job))
             {
                 // Refresh + re-activate. Embedding intentionally untouched.
-                // Title/Company are required non-null on Job; RawJob guarantees
-                // them non-null, so Trim() can't return null here.
-                job.Title = Trim(r.Title, 300)!;
-                job.Company = Trim(r.Company, 200)!;
-                job.Location = Trim(r.Location, 200);
-                job.Description = Trim(r.Description, 50_000);
+                job.Title = title;
+                job.Company = company;
+                job.Location = location;
+                job.Description = description;
                 job.ExpiresAt = r.ExpiresAt;
                 job.RawJson = r.RawJson;
                 job.IsActive = true;
+                job.LastSeenAt = now;
+                job.ContentHash = contentHash;
                 updated++;
             }
             else
@@ -116,14 +124,16 @@ public sealed class JobIngestionService(
                 {
                     Source = r.Source,
                     SourceExternalId = r.SourceExternalId,
-                    Title = Trim(r.Title, 300)!,
-                    Company = Trim(r.Company, 200)!,
-                    Location = Trim(r.Location, 200),
-                    Description = Trim(r.Description, 50_000),
+                    Title = title,
+                    Company = company,
+                    Location = location,
+                    Description = description,
                     PostedAt = r.PostedAt ?? now,
                     ExpiresAt = r.ExpiresAt,
                     RawJson = r.RawJson,
                     IsActive = true,
+                    LastSeenAt = now,
+                    ContentHash = contentHash,
                 });
                 inserted++;
             }
