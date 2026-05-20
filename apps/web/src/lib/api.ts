@@ -149,6 +149,14 @@ export interface Match {
   missingKeywords: string[];
 }
 
+export interface Metrics {
+  jobs: { total: number; active: number; embedded: number; bySource: Record<string, number> };
+  matches: { total: number; new: number; reasoned: number; avgScore: number };
+  resumes: { total: number; parsed: number; embedded: number };
+  llm: { calls: number; costUsd: number; byPurpose: Record<string, number> };
+  generatedAt: string;
+}
+
 /**
  * Multipart upload — separate from `request()` because we must NOT set a JSON
  * Content-Type; the browser sets multipart/form-data with the right boundary
@@ -236,4 +244,6 @@ export const api = {
       return request<Match[]>(`/api/matches${suffix}`);
     },
   },
+
+  adminMetrics: () => request<Metrics>("/api/admin/metrics", undefined, 10_000),
 };

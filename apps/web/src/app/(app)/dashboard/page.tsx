@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DbStatusTile } from "@/components/db-status-tile";
+import { MetricsTile } from "@/components/metrics-tile";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -30,18 +31,9 @@ export default function DashboardPage() {
         </p>
       </section>
 
-      <section
-        aria-labelledby="metrics-heading"
-        className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4"
-      >
-        <h2 id="metrics-heading" className="sr-only">
-          Top-line metrics
-        </h2>
-        <Card label="New matches" value="—" hint="seeded in AIRMVP1-204" />
-        <Card label="Submissions" value="—" hint="enabled in AIRMVP1-303" />
-        <Card label="Recruiter replies" value="—" hint="ingested in AIRMVP1-401" />
-        <Card label="Avg ATS score" value="—" hint="computed in AIRMVP1-302" />
-      </section>
+      <div className="mt-6">
+        <MetricsTile />
+      </div>
 
       <div className="mt-6">
         <DbStatusTile />
@@ -74,15 +66,5 @@ export default function DashboardPage() {
         </ol>
       </section>
     </div>
-  );
-}
-
-function Card({ label, value, hint }: { label: string; value: string; hint: string }) {
-  return (
-    <article className="rounded-xl border border-ink-700 bg-ink-900 p-5">
-      <p className="text-xs text-slate-400">{label}</p>
-      <p className="mt-1 text-3xl font-semibold tabular-nums">{value}</p>
-      <p className="mt-1 text-[11px] text-slate-500">{hint}</p>
-    </article>
   );
 }
