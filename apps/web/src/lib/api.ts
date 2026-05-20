@@ -149,6 +149,14 @@ export interface Match {
   missingKeywords: string[];
 }
 
+export interface AtsAnalysis {
+  matchId: string;
+  coveragePercent: number;
+  jobKeywordCount: number;
+  presentKeywords: string[];
+  missingKeywords: string[];
+}
+
 export interface Metrics {
   jobs: { total: number; active: number; embedded: number; bySource: Record<string, number> };
   matches: { total: number; new: number; reasoned: number; avgScore: number };
@@ -244,6 +252,8 @@ export const api = {
       return request<Match[]>(`/api/matches${suffix}`);
     },
   },
+
+  ats: (matchId: string) => request<AtsAnalysis>(`/api/matches/${matchId}/ats`),
 
   adminMetrics: () => request<Metrics>("/api/admin/metrics", undefined, 10_000),
 };

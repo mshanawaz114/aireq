@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { api, ApiError, type Match } from "@/lib/api";
+import { api, ApiError, type Match, type AtsAnalysis } from "@/lib/api";
 
 // Job Matches — the real list (replaces the AIRMVP1-106 placeholder).
 // Shows LLM-scored matches with rationale + missing-keyword chips, a min-score
@@ -138,7 +138,120 @@ function MatchCard({ match }: { match: Match }) {
           </span>
         )}
       </div>
+
+      <AtsPanel matchId={match.id} />
     </li>
+  );
+}
+
+function AtsPanel({ matchId }: { matchId: string }) {
+  const [open, setOpen] = useState(false);
+  const [ats, setAts] = useState<AtsAnalysis | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function toggle() {
+    const next = !open;
+    setOpen(next);
+    if (next && !ats && !loading) {
+      setLoading(true);
+      setError(null);
+      try {
+        setAts(await api.ats(matchId));
+      } catch (err) {
+        setError(err instanceof ApiError ? err.message : "Couldn't load ATS analysis.");
+      } finally {
+        setLoading(false);
+      }
+    }
+  }
+
+  return (
+    <div className="mt-4 border-t border-ink-800 pt-3">
+      <button
+        type="button"
+        onClick={toggle}
+        aria-expanded={open}
+        className="text-xs font-medium text-brand-400 hover:underline"
+      >
+        {open ? "Hide" : "Show"} ATS keyword analysis
+      </button>
+
+      {open && (
+        <div className="mt-3">
+          {loading && (
+            <p className="text-xs text-slate-400" role="status" aria-live="polite">
+              Analyzing…
+            </p>
+          )}
+          {error && (
+            <p className="text-xs text-bad-500" role="alert">
+              {error}
+            </p>
+          )}
+          {ats && (
+            <>
+              <div className="flex items-center gap-2">
+                <div
+                  className="h-2 flex-1 overflow-hidden rounded-full bg-ink-800"
+                  role="progressbar"
+                  aria-valuenow={ats.coveragePercent}
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-label="ATS keyword coverage"
+                >
+                  <div
+                    className={
+                      ats.coveragePercent >= 70 ? "h-full bg-good-500"
+                      : ats.coveragePercent >= 40 ? "h-full bg-warn-500"
+                      : "h-full bg-bad-500"
+                    }
+                    style={{ width: `${ats.coveragePercent}%` }}
+                  />
+                </div>
+                <span className="text-xs tabular-nums text-slate-300">
+                  {ats.coveragePercent}% coverage
+                </span>
+              </div>
+
+              {ats.missingKeywords.length > 0 ? (
+                <div className="mt-3">
+                  <p className="text-[11px] uppercase tracking-wide text-slate-500">
+                    Missing ({ats.missingKeywords.length}/{ats.jobKeywordCount})
+                  </p>
+                  <ul className="mt-1.5 flex flex-wrap gap-1.5">
+                    {ats.missingKeywords.map((k) => (
+                      <li key={k} className="rounded bg-bad-500/15 px-2 py-0.5 text-xs text-bad-500">
+                        {k}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : (
+                <p className="mt-3 text-xs text-good-500">
+                  Resume covers all detected ATS keywords for this role.
+                </p>
+              )}
+
+              {ats.presentKeywords.length > 0 && (
+                <div className="mt-3">
+                  <p className="text-[11px] uppercase tracking-wide text-slate-500">
+                    Present ({ats.presentKeywords.length})
+                  </p>
+                  <ul className="mt-1.5 flex flex-wrap gap-1.5">
+                    {ats.presentKeywords.map((k) => (
+                      <li key={k} className="rounded bg-good-500/15 px-2 py-0.5 text-xs text-good-500">
+                        {k}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
