@@ -30,6 +30,9 @@
     <!-- AIRMVP1-204: embedders construct Pgvector.Vector directly. -->
     <PackageReference Include="Pgvector" />
 
+    <!-- AIRMVP1-302: tailored-resume PDF rendering. -->
+    <PackageReference Include="QuestPDF" />
+
     <!-- .env.local loader (dev convenience) -->
     <PackageReference Include="DotNetEnv" />
 

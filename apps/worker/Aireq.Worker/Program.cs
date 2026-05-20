@@ -15,9 +15,11 @@ using Aireq.Shared.Jobs;
 using Aireq.Shared.Llm;
 using Aireq.Worker.Jobs;
 using Aireq.Worker.Jobs.Sources;
+using Aireq.Shared.Jobs;
 using Aireq.Worker.Llm;
 using Aireq.Worker.Matching;
 using Aireq.Worker.Resumes;
+using Aireq.Worker.Tailoring;
 using Hangfire;
 using Hangfire.PostgreSql;
 using Microsoft.EntityFrameworkCore;
@@ -25,6 +27,10 @@ using Serilog;
 
 // Load .env.local from repo root (dev only) — same reasoning as the API.
 DotNetEnv.Env.TraversePath().Load(".env.local");
+
+// QuestPDF Community license (free under $1M revenue) — must be set before any
+// PDF is generated. (AIRMVP1-302)
+QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -133,6 +139,10 @@ builder.Services.Configure<MatchScoringOptions>(
     builder.Configuration.GetSection(MatchScoringOptions.ConfigKey));
 builder.Services.AddScoped<MatchScorer>();
 builder.Services.AddScoped<IMatchScoringRunner, MatchScoringRunner>();
+
+// Resume tailoring (AIRMVP1-302). On-demand: enqueued by the API.
+builder.Services.AddScoped<ResumeTailor>();
+builder.Services.AddScoped<IResumeTailorJob, ResumeTailorJob>();
 
 // --- Job implementations --------------------------------------------------
 // Hangfire resolves these from DI when it picks a job off the queue.

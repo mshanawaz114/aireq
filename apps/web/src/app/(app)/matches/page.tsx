@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { api, ApiError, type Match, type AtsAnalysis } from "@/lib/api";
 
 // Job Matches — the real list (replaces the AIRMVP1-106 placeholder).
@@ -84,7 +83,18 @@ export default function MatchesPage() {
 }
 
 function MatchCard({ match }: { match: Match }) {
-  const router = useRouter();
+  const [tailorState, setTailorState] = useState<"idle" | "queuing" | "queued" | "error">("idle");
+
+  async function onTailor() {
+    setTailorState("queuing");
+    try {
+      await api.tailor(match.id);
+      setTailorState("queued");
+    } catch {
+      setTailorState("error");
+    }
+  }
+
   return (
     <li className="rounded-xl border border-ink-700 bg-ink-900 p-5">
       <div className="flex items-start justify-between gap-4">
@@ -127,12 +137,25 @@ function MatchCard({ match }: { match: Match }) {
       <div className="mt-4 flex items-center gap-3">
         <button
           type="button"
-          onClick={() => router.push("/tailor")}
-          className="rounded-md bg-brand-500 px-3.5 py-2 text-sm font-medium text-white hover:bg-brand-600"
+          onClick={onTailor}
+          disabled={tailorState === "queuing" || tailorState === "queued"}
+          className="rounded-md bg-brand-500 px-3.5 py-2 text-sm font-medium text-white hover:bg-brand-600 disabled:opacity-60"
         >
-          Tailor &amp; apply
+          {tailorState === "queuing" ? "Starting…"
+            : tailorState === "queued" ? "Tailoring queued"
+            : "Tailor & apply"}
         </button>
-        {!match.reasoned && (
+        {tailorState === "queued" && (
+          <span className="text-[11px] text-good-500" aria-live="polite">
+            Rewriting your resume in the background — check back shortly.
+          </span>
+        )}
+        {tailorState === "error" && (
+          <span className="text-[11px] text-bad-500" role="alert">
+            Couldn&rsquo;t start tailoring. Try again.
+          </span>
+        )}
+        {tailorState === "idle" && !match.reasoned && (
           <span className="text-[11px] text-slate-500" aria-live="polite">
             Vector score — AI review pending
           </span>

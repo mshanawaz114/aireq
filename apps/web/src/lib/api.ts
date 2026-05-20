@@ -255,5 +255,8 @@ export const api = {
 
   ats: (matchId: string) => request<AtsAnalysis>(`/api/matches/${matchId}/ats`),
 
+  tailor: (matchId: string) =>
+    request<{ enqueued: string }>(`/api/matches/${matchId}/tailor`, { method: "POST" }),
+
   adminMetrics: () => request<Metrics>("/api/admin/metrics", undefined, 10_000),
 };

@@ -157,6 +157,7 @@ app.MapResumeEndpoints();
 app.MapMatchEndpoints();
 app.MapMetricsEndpoints();
 app.MapAtsEndpoints();
+app.MapTailorEndpoints();
 
 app.Run();
 
