@@ -22,6 +22,15 @@ public interface IJobSource
     /// <summary>False when the source isn't configured (missing key). Skipped, not errored.</summary>
     bool IsEnabled { get; }
 
+    /// <summary>
+    /// True for keyword-search sources (Adzuna, USAJobs) — the ingestion service
+    /// runs them once per configured query. False for full-board sources (ATS
+    /// endpoints return a company's entire board regardless of keywords) — the
+    /// service runs them once per ingestion pass to avoid re-fetching boards N
+    /// times. Defaults to true; ATS sources override to false.
+    /// </summary>
+    bool IsKeywordDriven => true;
+
     /// <summary>Stream matching postings for the query. Implementations page internally.</summary>
     IAsyncEnumerable<RawJob> FetchAsync(JobSourceQuery query, CancellationToken ct);
 }

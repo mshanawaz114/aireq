@@ -91,8 +91,17 @@ switch (llmProvider)
 // when its key is missing. Adding more sources = one AddHttpClient line.
 builder.Services.Configure<JobIngestionOptions>(
     builder.Configuration.GetSection(JobIngestionOptions.ConfigKey));
+builder.Services.Configure<AtsSeedOptions>(
+    builder.Configuration.GetSection(AtsSeedOptions.ConfigKey));
+
+// Keyword-search sources (config-keyed).
 builder.Services.AddHttpClient<IJobSource, AdzunaJobSource>();
 builder.Services.AddHttpClient<IJobSource, UsaJobsJobSource>();
+// ATS full-board sources (keyless, freshest — straight from employer ATS).
+builder.Services.AddHttpClient<IJobSource, GreenhouseJobSource>();
+builder.Services.AddHttpClient<IJobSource, LeverJobSource>();
+builder.Services.AddHttpClient<IJobSource, AshbyJobSource>();
+
 builder.Services.AddScoped<JobIngestionService>();
 builder.Services.AddScoped<IJobIngestionRunner, JobIngestionRunner>();
 

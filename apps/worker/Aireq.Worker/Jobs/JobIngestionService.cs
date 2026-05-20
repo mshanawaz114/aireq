@@ -46,10 +46,15 @@ public sealed class JobIngestionService(
 
         foreach (var source in enabled)
         {
-            foreach (var keywords in opts.Queries)
+            // Keyword sources run once per query; full-board sources (ATS) run
+            // once per pass since they ignore keywords and return the whole board.
+            var queries = source.IsKeywordDriven
+                ? opts.Queries.Select(k => new JobSourceQuery(k, opts.Location, opts.MaxResultsPerQuery))
+                : new[] { new JobSourceQuery("*", opts.Location, opts.MaxResultsPerQuery) }.AsEnumerable();
+
+            foreach (var query in queries)
             {
                 if (ct.IsCancellationRequested) break;
-                var query = new JobSourceQuery(keywords, opts.Location, opts.MaxResultsPerQuery);
                 try
                 {
                     var (inserted, updated) = await IngestOneAsync(source, query, ct);
@@ -59,7 +64,7 @@ public sealed class JobIngestionService(
                 {
                     // One bad (source, query) must not abort the whole run.
                     log.LogError(ex, "Ingestion failed for source={Source} query={Query}.",
-                        source.Name, keywords);
+                        source.Name, query.Keywords);
                     report.AddError(source.Name);
                 }
             }
