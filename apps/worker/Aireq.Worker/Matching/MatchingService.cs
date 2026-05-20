@@ -80,7 +80,7 @@ public sealed class MatchingService(
     }
 
     /// <summary>Cosine distance (0..2) -> 0–100 score. similarity = 1 - distance.</summary>
-    internal static int ToScore(double cosineDistance)
+    public static int ToScore(double cosineDistance)
     {
         var similarity = 1.0 - cosineDistance;
         var clamped = Math.Clamp(similarity, 0.0, 1.0);
@@ -93,7 +93,7 @@ public sealed class MatchingService(
     /// require a shared token (city/state). Heuristic — tightens once we parse
     /// structured location out of the JD.
     /// </summary>
-    internal static bool LocationCompatible(string? consultantLocation, string? jobLocation)
+    public static bool LocationCompatible(string? consultantLocation, string? jobLocation)
     {
         if (string.IsNullOrWhiteSpace(jobLocation)) return true;
         if (jobLocation.Contains("remote", StringComparison.OrdinalIgnoreCase)) return true;
