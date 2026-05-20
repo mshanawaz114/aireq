@@ -13,6 +13,8 @@ using Aireq.Api.Storage;
 using Aireq.Shared.Db;
 using Aireq.Shared.Jobs;
 using Aireq.Shared.Llm;
+using Aireq.Worker.Jobs;
+using Aireq.Worker.Jobs.Sources;
 using Aireq.Worker.Llm;
 using Aireq.Worker.Resumes;
 using Hangfire;
@@ -64,14 +66,35 @@ builder.Services.AddSingleton<IBlobStorage, AzureBlobStorage>();
 
 // --- LLM gateway ----------------------------------------------------------
 // IHttpClientFactory wires retry / circuit-breaker policies in AIRMVP1-130.
-// For now this is a plain HttpClient with the default timeout.
+// Provider selection: LLM__PROVIDER=groq (default, free) | anthropic (paid).
+// We ship MVP on Groq + Llama 3.1 8B to keep spend at $0; flip to Anthropic
+// when there's revenue.
 builder.Services.Configure<LlmBudgetOptions>(
     builder.Configuration.GetSection(LlmBudgetOptions.ConfigKey));
-builder.Services
-    .AddHttpClient<ILlmGateway, AnthropicLlmGateway>(c =>
-    {
-        c.Timeout = TimeSpan.FromMinutes(2);
-    });
+
+var llmProvider = (builder.Configuration["LLM:PROVIDER"] ?? "groq").Trim().ToLowerInvariant();
+switch (llmProvider)
+{
+    case "anthropic":
+        builder.Services.AddHttpClient<ILlmGateway, AnthropicLlmGateway>(c =>
+            c.Timeout = TimeSpan.FromMinutes(2));
+        break;
+    case "groq":
+    default:
+        builder.Services.AddHttpClient<ILlmGateway, GroqLlmGateway>(c =>
+            c.Timeout = TimeSpan.FromMinutes(2));
+        break;
+}
+
+// --- Job discovery sources (AIRMVP1-201) ----------------------------------
+// Each source is registered with its own typed HttpClient and self-disables
+// when its key is missing. Adding more sources = one AddHttpClient line.
+builder.Services.Configure<JobIngestionOptions>(
+    builder.Configuration.GetSection(JobIngestionOptions.ConfigKey));
+builder.Services.AddHttpClient<IJobSource, AdzunaJobSource>();
+builder.Services.AddHttpClient<IJobSource, UsaJobsJobSource>();
+builder.Services.AddScoped<JobIngestionService>();
+builder.Services.AddScoped<IJobIngestionRunner, JobIngestionRunner>();
 
 // --- Job implementations --------------------------------------------------
 // Hangfire resolves these from DI when it picks a job off the queue.
@@ -92,5 +115,32 @@ app.UseHangfireDashboard("/hangfire", new DashboardOptions
 });
 
 app.MapGet("/health/live", () => Results.Ok(new { status = "ok", service = "worker" }));
+
+// Dev-only: kick off job ingestion immediately instead of waiting for the
+// 6h cron. Returns the enqueued Hangfire job id. NOT mapped in production —
+// ingestion there is purely schedule-driven.
+if (app.Environment.IsDevelopment())
+{
+    app.MapPost("/jobs/ingest", (IBackgroundJobClient jobs) =>
+    {
+        var id = jobs.Enqueue<IJobIngestionRunner>(r => r.RunAsync(CancellationToken.None));
+        return Results.Ok(new { enqueued = id });
+    });
+}
+
+// --- Recurring jobs --------------------------------------------------------
+// Job discovery runs on a cron (default every 6h). Hangfire persists the
+// schedule in Postgres, so this is idempotent across restarts — AddOrUpdate
+// just refreshes the definition.
+using (var scope = app.Services.CreateScope())
+{
+    var ingestionOpts = scope.ServiceProvider
+        .GetRequiredService<Microsoft.Extensions.Options.IOptions<JobIngestionOptions>>().Value;
+    var recurring = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
+    recurring.AddOrUpdate<IJobIngestionRunner>(
+        "job-ingestion",
+        runner => runner.RunAsync(CancellationToken.None),
+        ingestionOpts.Cron);
+}
 
 app.Run();

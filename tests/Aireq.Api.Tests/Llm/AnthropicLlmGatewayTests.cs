@@ -85,7 +85,18 @@ public sealed class AnthropicLlmGatewayTests
     [Fact]
     public async Task Happy_path_posts_request_returns_response_and_audit_logs()
     {
-        var (db, _, handler, gw) = BuildSut();
+        // Capture the request body DURING the call — the gateway wraps its
+        // request in `using`, so it's disposed by the time the assertions run;
+        // reading req.Content afterwards would throw ObjectDisposedException.
+        string? capturedBody = null;
+        var (db, _, handler, gw) = BuildSut(respond: async (req, ct) =>
+        {
+            capturedBody = req.Content is null ? null : await req.Content.ReadAsStringAsync(ct);
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(SampleResponseJson, System.Text.Encoding.UTF8, "application/json"),
+            };
+        });
         var tenantId = Guid.NewGuid();
 
         var resp = await gw.CompleteAsync(new LlmRequest(
@@ -96,6 +107,8 @@ public sealed class AnthropicLlmGatewayTests
             UserPrompt: "user"), CancellationToken.None);
 
         // ---- request shape ----------------------------------------------
+        // Method/URI/headers stay readable on a disposed request — only the
+        // Content stream is gone, which is why we captured the body above.
         handler.Requests.Should().ContainSingle();
         var req = handler.Requests.Single();
         req.Method.Should().Be(HttpMethod.Post);
@@ -103,7 +116,8 @@ public sealed class AnthropicLlmGatewayTests
         req.Headers.GetValues("x-api-key").Single().Should().Be("test-key");
         req.Headers.GetValues("anthropic-version").Single().Should().Be("2023-06-01");
 
-        var sentBody = JsonDocument.Parse(await req.Content!.ReadAsStringAsync()).RootElement;
+        capturedBody.Should().NotBeNull();
+        var sentBody = JsonDocument.Parse(capturedBody!).RootElement;
         sentBody.GetProperty("model").GetString().Should().Be("claude-haiku-4-5");
         sentBody.GetProperty("system").GetString().Should().Be("system");
         sentBody.GetProperty("messages")[0].GetProperty("role").GetString().Should().Be("user");
