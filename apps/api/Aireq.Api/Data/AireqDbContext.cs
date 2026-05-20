@@ -19,6 +19,7 @@
 using Aireq.Api.Auth;
 using Aireq.Api.Data.Common;
 using Aireq.Api.Data.Entities;
+using Aireq.Shared.Llm;
 using Microsoft.EntityFrameworkCore;
 
 // Aliased to avoid collision with our Match entity — System.Text.RegularExpressions
@@ -128,7 +129,7 @@ public sealed class AireqDbContext(
             if (isNpgsql)
             {
                 b.Property(x => x.ParsedJson).HasColumnType("jsonb");
-                b.Property(x => x.Embedding).HasColumnType("vector(1536)");
+                b.Property(x => x.Embedding).HasColumnType($"vector({EmbeddingConfig.Dimensions})");
             }
             else
             {
@@ -174,7 +175,7 @@ public sealed class AireqDbContext(
             if (isNpgsql)
             {
                 b.Property(x => x.RawJson).HasColumnType("jsonb");
-                b.Property(x => x.Embedding).HasColumnType("vector(1536)");
+                b.Property(x => x.Embedding).HasColumnType($"vector({EmbeddingConfig.Dimensions})");
                 // Backfill existing rows + any insert that forgets to set it with
                 // now(), so they aren't immediately treated as stale. (AIRMVP1-203)
                 b.Property(x => x.LastSeenAt).HasDefaultValueSql("now()");

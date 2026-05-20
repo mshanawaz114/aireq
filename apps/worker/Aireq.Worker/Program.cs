@@ -16,6 +16,7 @@ using Aireq.Shared.Llm;
 using Aireq.Worker.Jobs;
 using Aireq.Worker.Jobs.Sources;
 using Aireq.Worker.Llm;
+using Aireq.Worker.Matching;
 using Aireq.Worker.Resumes;
 using Hangfire;
 using Hangfire.PostgreSql;
@@ -111,6 +112,15 @@ builder.Services.Configure<JobMaintenanceOptions>(
 builder.Services.AddScoped<JobMaintenanceService>();
 builder.Services.AddScoped<IJobMaintenanceRunner, JobMaintenanceRunner>();
 
+// Embeddings (AIRMVP1-204a). Gemini text-embedding-004 (free), 768-dim.
+builder.Services.Configure<EmbeddingOptions>(
+    builder.Configuration.GetSection(EmbeddingOptions.ConfigKey));
+builder.Services.AddHttpClient<IEmbeddingGateway, GeminiEmbeddingGateway>(c =>
+    c.Timeout = TimeSpan.FromMinutes(1));
+builder.Services.AddScoped<JobEmbedder>();
+builder.Services.AddScoped<ResumeEmbedder>();
+builder.Services.AddScoped<IEmbeddingRunner, EmbeddingRunner>();
+
 // --- Job implementations --------------------------------------------------
 // Hangfire resolves these from DI when it picks a job off the queue.
 // Scoped so each invocation gets fresh DbContext / HttpClient / etc.
@@ -147,6 +157,12 @@ if (app.Environment.IsDevelopment())
         var id = jobs.Enqueue<IJobMaintenanceRunner>(r => r.RunAsync(CancellationToken.None));
         return Results.Ok(new { enqueued = id });
     });
+
+    app.MapPost("/jobs/embed", (IBackgroundJobClient jobs) =>
+    {
+        var id = jobs.Enqueue<IEmbeddingRunner>(r => r.RunAsync(CancellationToken.None));
+        return Results.Ok(new { enqueued = id });
+    });
 }
 
 // --- Recurring jobs --------------------------------------------------------
@@ -168,6 +184,13 @@ using (var scope = app.Services.CreateScope())
         "job-maintenance",
         runner => runner.RunAsync(CancellationToken.None),
         maintenanceOpts.Cron);
+
+    var embeddingOpts = scope.ServiceProvider
+        .GetRequiredService<Microsoft.Extensions.Options.IOptions<EmbeddingOptions>>().Value;
+    recurring.AddOrUpdate<IEmbeddingRunner>(
+        "embedding-pass",
+        runner => runner.RunAsync(CancellationToken.None),
+        embeddingOpts.Cron);
 }
 
 app.Run();

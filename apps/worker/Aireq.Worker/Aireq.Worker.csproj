@@ -27,6 +27,9 @@
     <!-- AIRMVP1-105: PDF text extraction for the resume parser. -->
     <PackageReference Include="PdfPig" />
 
+    <!-- AIRMVP1-204: embedders construct Pgvector.Vector directly. -->
+    <PackageReference Include="Pgvector" />
+
     <!-- .env.local loader (dev convenience) -->
     <PackageReference Include="DotNetEnv" />
 
