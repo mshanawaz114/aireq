@@ -104,6 +104,74 @@ export interface AuthResponse {
   };
 }
 
+export interface Consultant {
+  id: string;
+  fullName: string;
+  headline: string | null;
+  location: string | null;
+  workAuth: string | null;
+  rateTargetUsdHourly: number | null;
+  resumeCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpsertConsultantBody {
+  fullName: string;
+  headline?: string | null;
+  location?: string | null;
+  workAuth?: string | null;
+  rateTargetUsdHourly?: number | null;
+}
+
+export interface ResumeResponse {
+  id: string;
+  consultantId: string;
+  version: number;
+  sourceBlobUrl: string;
+  originalFilename: string | null;
+  parsedJson: string | null;
+  createdAt: string;
+}
+
+/**
+ * Multipart upload — separate from `request()` because we must NOT set a JSON
+ * Content-Type; the browser sets multipart/form-data with the right boundary
+ * when the body is a FormData. Auth header still injected by hand.
+ */
+async function uploadFile<T>(path: string, file: File, timeoutMs = 30_000): Promise<T> {
+  const controller = new AbortController();
+  const t = setTimeout(() => controller.abort(), timeoutMs);
+  const form = new FormData();
+  form.append("file", file);
+
+  const headers: Record<string, string> = {};
+  const session = readSession();
+  if (session?.accessToken) headers["Authorization"] = `Bearer ${session.accessToken}`;
+
+  try {
+    const res = await fetch(`${API_URL}${path}`, {
+      method: "POST",
+      body: form,
+      signal: controller.signal,
+      headers,
+    });
+    if (res.status === 401) clearSession();
+    if (!res.ok) {
+      let msg: string | undefined;
+      try {
+        msg = ((await res.clone().json()) as { error?: string })?.error;
+      } catch {
+        /* not json */
+      }
+      throw new ApiError(res.status, msg ?? `${res.status} ${res.statusText}`);
+    }
+    return (await res.json()) as T;
+  } finally {
+    clearTimeout(t);
+  }
+}
+
 export const api = {
   health: () => request<HealthResponse>("/health/ready", { withAuth: false }),
   dbStatus: () => request<DbStatusResponse>("/api/db/status", undefined, 10_000),
@@ -122,5 +190,25 @@ export const api = {
         withAuth: false,
       }),
     me: () => request<AuthResponse["user"]>("/api/auth/me"),
+  },
+
+  consultants: {
+    list: () => request<Consultant[]>("/api/consultants"),
+    get: (id: string) => request<Consultant>(`/api/consultants/${id}`),
+    create: (body: UpsertConsultantBody) =>
+      request<Consultant>("/api/consultants", {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
+    update: (id: string, body: UpsertConsultantBody) =>
+      request<Consultant>(`/api/consultants/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(body),
+      }),
+  },
+
+  resumes: {
+    upload: (consultantId: string, file: File) =>
+      uploadFile<ResumeResponse>(`/api/consultants/${consultantId}/resumes`, file),
   },
 };

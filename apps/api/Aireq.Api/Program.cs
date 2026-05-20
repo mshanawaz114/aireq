@@ -9,6 +9,7 @@
 // Refs: AIRMVP1-101
 
 using Aireq.Api.Auth;
+using Aireq.Api.Consultants;
 using Aireq.Api.Data;
 using Aireq.Api.Data.Entities;
 using Aireq.Api.Endpoints;
@@ -99,6 +100,7 @@ builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
 // HttpClient — making one per request is wasteful.
 builder.Services.AddSingleton<IBlobStorage, AzureBlobStorage>();
 builder.Services.AddScoped<UploadResumeService>();
+builder.Services.AddScoped<ConsultantService>();
 
 // Allow multipart bodies up to 10 MB — matches UploadResumeService.MaxBytes.
 builder.Services.Configure<FormOptions>(opts =>
@@ -147,6 +149,7 @@ if (app.Environment.IsDevelopment())
 app.MapHealthEndpoints();
 app.MapDbStatusEndpoints();
 app.MapAuthEndpoints();
+app.MapConsultantEndpoints();
 app.MapResumeEndpoints();
 
 app.Run();

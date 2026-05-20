@@ -19,14 +19,14 @@ export default function DashboardPage() {
           Welcome to Aireq.
         </h2>
         <p className="mt-2 max-w-prose text-sm text-slate-400">
-          You&rsquo;re looking at <code className="rounded bg-ink-800 px-1.5 py-0.5">AIRMVP1-101</code> —
-          the freshly-scaffolded shell. The dashboard, profile, matches, tailor, submissions,
-          inbox, and escalations pages fill in across the rest of week&nbsp;1
-          (<code className="rounded bg-ink-800 px-1.5 py-0.5">AIRMVP1-102…107</code>).
+          Week&nbsp;1 of the MVP is live: sign in, build your{" "}
+          <a href="/profile" className="text-brand-400 hover:underline">consultant profile</a>,
+          and upload a resume — it&rsquo;s stored and parsed automatically in the background.
         </p>
         <p className="mt-2 max-w-prose text-sm text-slate-400">
-          The badge in the top-right polls the API every 15 seconds and shows live status of the
-          backend plus its Neon Postgres connection. If it&rsquo;s green, your local stack is healthy.
+          Job matching, per-job tailoring, auto-apply, and the recruiter inbox land across
+          weeks&nbsp;2&ndash;4 — those nav items are placeholders until then. The badge top-right
+          polls the API and its Neon Postgres connection; green means your stack is healthy.
         </p>
       </section>
 
@@ -52,29 +52,25 @@ export default function DashboardPage() {
         className="mt-6 rounded-xl border border-ink-700 bg-ink-900 p-6"
       >
         <h2 id="next-steps-heading" className="font-medium">
-          Next steps
+          Try the resume loop
         </h2>
         <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-sm text-slate-300">
           <li>
-            Open{" "}
-            <a
-              href="https://github.com/mshanawaz114/aireq/blob/main/SETUP_CLOUD.md"
-              className="text-brand-400 hover:underline"
-            >
-              SETUP_CLOUD.md
-            </a>{" "}
-            and create your Neon project + Anthropic key.
+            Go to{" "}
+            <a href="/profile" className="text-brand-400 hover:underline">Consultant Profile</a>{" "}
+            and fill in your details, then Save.
+          </li>
+          <li>Upload a resume (PDF / DOC / DOCX / TXT, max 10&nbsp;MB).</li>
+          <li>
+            The upload is stored and a background job parses it into structured skills &amp;
+            experience. Watch the worker logs or the{" "}
+            <a href="http://localhost:5090/hangfire" className="text-brand-400 hover:underline">
+              Hangfire dashboard
+            </a>.
           </li>
           <li>
-            Copy <code className="rounded bg-ink-800 px-1.5 py-0.5">.env.example</code> to{" "}
-            <code className="rounded bg-ink-800 px-1.5 py-0.5">.env.local</code> at the repo root and
-            paste in the connection strings.
+            The <strong>Resumes</strong> count in the schema tile above ticks up as you upload.
           </li>
-          <li>
-            Run <code className="rounded bg-ink-800 px-1.5 py-0.5">make dev</code> to boot all three
-            processes (api, worker, web).
-          </li>
-          <li>The badge above turns green. You&rsquo;re ready for AIRMVP1-102.</li>
         </ol>
       </section>
     </div>
