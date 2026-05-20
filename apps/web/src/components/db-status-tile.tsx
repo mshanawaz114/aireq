@@ -107,7 +107,8 @@ export function DbStatusTile() {
       </div>
 
       <p className="mt-2 text-sm text-slate-400">
-        Live row counts per table. Counts stay at 0 until <code className="rounded bg-ink-800 px-1.5 py-0.5">AIRMVP1-104</code> wires up resume upload.
+        Live row counts per table. Core tables fill in as you use the app;
+        match &amp; ops tables populate across weeks&nbsp;2&ndash;4.
       </p>
 
       <div className="mt-4 grid grid-cols-1 gap-x-6 gap-y-1 sm:grid-cols-2 lg:grid-cols-3">
