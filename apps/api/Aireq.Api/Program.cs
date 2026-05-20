@@ -101,6 +101,7 @@ builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddSingleton<IBlobStorage, AzureBlobStorage>();
 builder.Services.AddScoped<UploadResumeService>();
 builder.Services.AddScoped<ConsultantService>();
+builder.Services.AddScoped<Aireq.Api.Matches.MatchListService>();
 
 // Allow multipart bodies up to 10 MB — matches UploadResumeService.MaxBytes.
 builder.Services.Configure<FormOptions>(opts =>
@@ -151,6 +152,7 @@ app.MapDbStatusEndpoints();
 app.MapAuthEndpoints();
 app.MapConsultantEndpoints();
 app.MapResumeEndpoints();
+app.MapMatchEndpoints();
 
 app.Run();
 

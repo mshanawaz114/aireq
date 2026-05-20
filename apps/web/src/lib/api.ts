@@ -134,6 +134,21 @@ export interface ResumeResponse {
   createdAt: string;
 }
 
+export interface Match {
+  id: string;
+  jobId: string;
+  jobTitle: string;
+  company: string;
+  location: string | null;
+  postedAt: string;
+  score: number;
+  status: string;
+  reasoned: boolean;
+  summary: string | null;
+  rationale: string[];
+  missingKeywords: string[];
+}
+
 /**
  * Multipart upload — separate from `request()` because we must NOT set a JSON
  * Content-Type; the browser sets multipart/form-data with the right boundary
@@ -210,5 +225,15 @@ export const api = {
   resumes: {
     upload: (consultantId: string, file: File) =>
       uploadFile<ResumeResponse>(`/api/consultants/${consultantId}/resumes`, file),
+  },
+
+  matches: {
+    list: (params?: { minScore?: number; status?: string }) => {
+      const qs = new URLSearchParams();
+      if (params?.minScore != null) qs.set("minScore", String(params.minScore));
+      if (params?.status) qs.set("status", params.status);
+      const suffix = qs.toString() ? `?${qs}` : "";
+      return request<Match[]>(`/api/matches${suffix}`);
+    },
   },
 };
