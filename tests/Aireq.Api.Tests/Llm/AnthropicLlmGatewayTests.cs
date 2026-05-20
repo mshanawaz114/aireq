@@ -96,14 +96,14 @@ public sealed class AnthropicLlmGatewayTests
             UserPrompt: "user"), CancellationToken.None);
 
         // ---- request shape ----------------------------------------------
-        handler.Requests.Should().ContainSingle();
-        var req = handler.Requests.Single();
+        handler.Captured.Should().ContainSingle();
+        var req = handler.Captured.Single();
         req.Method.Should().Be(HttpMethod.Post);
-        req.RequestUri!.AbsoluteUri.Should().Be("https://api.anthropic.com/v1/messages");
-        req.Headers.GetValues("x-api-key").Single().Should().Be("test-key");
-        req.Headers.GetValues("anthropic-version").Single().Should().Be("2023-06-01");
+        req.Uri.AbsoluteUri.Should().Be("https://api.anthropic.com/v1/messages");
+        req.Headers["x-api-key"].Single().Should().Be("test-key");
+        req.Headers["anthropic-version"].Single().Should().Be("2023-06-01");
 
-        var sentBody = JsonDocument.Parse(await req.Content!.ReadAsStringAsync()).RootElement;
+        var sentBody = JsonDocument.Parse(req.Body).RootElement;
         sentBody.GetProperty("model").GetString().Should().Be("claude-haiku-4-5");
         sentBody.GetProperty("system").GetString().Should().Be("system");
         sentBody.GetProperty("messages")[0].GetProperty("role").GetString().Should().Be("user");
@@ -166,7 +166,7 @@ public sealed class AnthropicLlmGatewayTests
         var act = async () => await gw.CompleteAsync(new LlmRequest(
             tenantId, LlmModel.Haiku, "resume.parse", "sys", "usr"), CancellationToken.None);
         await act.Should().ThrowAsync<LlmBudgetExceededException>();
-        handler.Requests.Should().BeEmpty("network call must not be issued when over budget");
+        handler.Captured.Should().BeEmpty("network call must not be issued when over budget");
     }
 
     [Fact]
@@ -191,7 +191,7 @@ public sealed class AnthropicLlmGatewayTests
             LlmModel.Haiku, "system.classify", "sys", "usr"), CancellationToken.None);
 
         resp.Should().NotBeNull();
-        handler.Requests.Should().ContainSingle();
+        handler.Captured.Should().ContainSingle();
     }
 
     [Fact]

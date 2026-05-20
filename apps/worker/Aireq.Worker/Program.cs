@@ -65,13 +65,31 @@ builder.Services.AddSingleton<IBlobStorage, AzureBlobStorage>();
 // --- LLM gateway ----------------------------------------------------------
 // IHttpClientFactory wires retry / circuit-breaker policies in AIRMVP1-130.
 // For now this is a plain HttpClient with the default timeout.
+//
+// Provider selection: LLM__PROVIDER=groq (default, free) | anthropic (paid).
+// memory.md §9 default is Anthropic Haiku; we ship MVP on Groq + Llama 3.1 8B
+// to keep month-1 spend at $0 and flip to Anthropic when there's revenue.
 builder.Services.Configure<LlmBudgetOptions>(
     builder.Configuration.GetSection(LlmBudgetOptions.ConfigKey));
-builder.Services
-    .AddHttpClient<ILlmGateway, AnthropicLlmGateway>(c =>
-    {
-        c.Timeout = TimeSpan.FromMinutes(2);
-    });
+
+var llmProvider = (builder.Configuration["LLM:PROVIDER"] ?? "groq").Trim().ToLowerInvariant();
+switch (llmProvider)
+{
+    case "anthropic":
+        builder.Services.AddHttpClient<ILlmGateway, AnthropicLlmGateway>(c =>
+        {
+            c.Timeout = TimeSpan.FromMinutes(2);
+        });
+        break;
+
+    case "groq":
+    default:
+        builder.Services.AddHttpClient<ILlmGateway, GroqLlmGateway>(c =>
+        {
+            c.Timeout = TimeSpan.FromMinutes(2);
+        });
+        break;
+}
 
 // --- Job implementations --------------------------------------------------
 // Hangfire resolves these from DI when it picks a job off the queue.
