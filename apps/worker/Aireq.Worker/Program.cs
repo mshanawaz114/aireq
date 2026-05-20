@@ -105,6 +105,12 @@ builder.Services.AddHttpClient<IJobSource, AshbyJobSource>();
 builder.Services.AddScoped<JobIngestionService>();
 builder.Services.AddScoped<IJobIngestionRunner, JobIngestionRunner>();
 
+// Dedupe + freshness maintenance (AIRMVP1-203).
+builder.Services.Configure<JobMaintenanceOptions>(
+    builder.Configuration.GetSection(JobMaintenanceOptions.ConfigKey));
+builder.Services.AddScoped<JobMaintenanceService>();
+builder.Services.AddScoped<IJobMaintenanceRunner, JobMaintenanceRunner>();
+
 // --- Job implementations --------------------------------------------------
 // Hangfire resolves these from DI when it picks a job off the queue.
 // Scoped so each invocation gets fresh DbContext / HttpClient / etc.
@@ -135,6 +141,12 @@ if (app.Environment.IsDevelopment())
         var id = jobs.Enqueue<IJobIngestionRunner>(r => r.RunAsync(CancellationToken.None));
         return Results.Ok(new { enqueued = id });
     });
+
+    app.MapPost("/jobs/maintenance", (IBackgroundJobClient jobs) =>
+    {
+        var id = jobs.Enqueue<IJobMaintenanceRunner>(r => r.RunAsync(CancellationToken.None));
+        return Results.Ok(new { enqueued = id });
+    });
 }
 
 // --- Recurring jobs --------------------------------------------------------
@@ -145,11 +157,17 @@ using (var scope = app.Services.CreateScope())
 {
     var ingestionOpts = scope.ServiceProvider
         .GetRequiredService<Microsoft.Extensions.Options.IOptions<JobIngestionOptions>>().Value;
+    var maintenanceOpts = scope.ServiceProvider
+        .GetRequiredService<Microsoft.Extensions.Options.IOptions<JobMaintenanceOptions>>().Value;
     var recurring = scope.ServiceProvider.GetRequiredService<IRecurringJobManager>();
     recurring.AddOrUpdate<IJobIngestionRunner>(
         "job-ingestion",
         runner => runner.RunAsync(CancellationToken.None),
         ingestionOpts.Cron);
+    recurring.AddOrUpdate<IJobMaintenanceRunner>(
+        "job-maintenance",
+        runner => runner.RunAsync(CancellationToken.None),
+        maintenanceOpts.Cron);
 }
 
 app.Run();

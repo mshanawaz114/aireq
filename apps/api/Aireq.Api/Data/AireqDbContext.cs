@@ -175,15 +175,24 @@ public sealed class AireqDbContext(
             {
                 b.Property(x => x.RawJson).HasColumnType("jsonb");
                 b.Property(x => x.Embedding).HasColumnType("vector(1536)");
+                // Backfill existing rows + any insert that forgets to set it with
+                // now(), so they aren't immediately treated as stale. (AIRMVP1-203)
+                b.Property(x => x.LastSeenAt).HasDefaultValueSql("now()");
             }
             else
             {
                 // InMemory / SQLite test providers can't map Pgvector.Vector.
                 b.Ignore(x => x.Embedding);
             }
+            b.Property(x => x.ContentHash).HasMaxLength(64);
             b.HasIndex(x => new { x.Source, x.SourceExternalId }).IsUnique();
             b.HasIndex(x => x.PostedAt);
             b.HasIndex(x => x.IsActive);
+            // Freshness sweep scans by LastSeenAt; dedupe groups by ContentHash;
+            // matching filters out duplicates by CanonicalJobId. (AIRMVP1-203)
+            b.HasIndex(x => x.LastSeenAt);
+            b.HasIndex(x => x.ContentHash);
+            b.HasIndex(x => x.CanonicalJobId);
         });
 
         // ---- Match ----
