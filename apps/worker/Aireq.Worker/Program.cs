@@ -15,7 +15,6 @@ using Aireq.Shared.Jobs;
 using Aireq.Shared.Llm;
 using Aireq.Worker.Jobs;
 using Aireq.Worker.Jobs.Sources;
-using Aireq.Shared.Jobs;
 using Aireq.Worker.Llm;
 using Aireq.Worker.Matching;
 using Aireq.Worker.Resumes;
