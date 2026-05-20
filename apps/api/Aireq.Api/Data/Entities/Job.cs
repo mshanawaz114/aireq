@@ -31,8 +31,13 @@ public sealed class Job : ITimestamped
     /// <summary>Full provider payload — kept for forensics + re-derivation.</summary>
     public string? RawJson { get; set; }
 
-    /// <summary>1536-dim embedding of the JD for vector matching.</summary>
+    /// <summary>Dense embedding of the JD for vector matching (dim = EmbeddingConfig.Dimensions).</summary>
     public Vector? Embedding { get; set; }
+
+    /// <summary>When the embedding was last computed. Null = needs embedding.
+    /// Mapped on every provider (unlike Embedding, which is Npgsql-only), so the
+    /// embedder can find un-embedded rows in tests too. (AIRMVP1-204)</summary>
+    public DateTimeOffset? EmbeddedAt { get; set; }
 
     /// <summary>True while the posting is live + canonical. The freshness sweep
     /// (AIRMVP1-203) sets this false once <see cref="LastSeenAt"/> falls outside

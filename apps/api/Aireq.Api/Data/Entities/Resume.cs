@@ -28,8 +28,13 @@ public sealed class Resume : ITimestamped
     /// </summary>
     public string? ParsedJson { get; set; }
 
-    /// <summary>1536-dim embedding from text-embedding-3-small.</summary>
+    /// <summary>Dense embedding of the parsed resume (dim = EmbeddingConfig.Dimensions).
+    /// This is the consultant's matching vector.</summary>
     public Vector? Embedding { get; set; }
+
+    /// <summary>When the embedding was last computed. Null = needs embedding.
+    /// Mapped on every provider (unlike Embedding). (AIRMVP1-204)</summary>
+    public DateTimeOffset? EmbeddedAt { get; set; }
 
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
