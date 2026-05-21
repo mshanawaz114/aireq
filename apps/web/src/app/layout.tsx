@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -23,6 +24,13 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
+// Plausible analytics — privacy-friendly, cookieless. Only loaded when a domain
+// is configured (so dev/CI stay analytics-free). Self-hosted instances can point
+// the script host at their own URL. (AIRMVP1-405)
+const plausibleDomain = process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN;
+const plausibleSrc =
+  process.env.NEXT_PUBLIC_PLAUSIBLE_SRC ?? "https://plausible.io/js/script.js";
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" dir="ltr" suppressHydrationWarning>
@@ -32,6 +40,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           Skip to main content
         </a>
         {children}
+        {plausibleDomain && (
+          <Script
+            defer
+            data-domain={plausibleDomain}
+            src={plausibleSrc}
+            strategy="afterInteractive"
+          />
+        )}
       </body>
     </html>
   );
