@@ -143,6 +143,15 @@ builder.Services.AddScoped<IMatchScoringRunner, MatchScoringRunner>();
 builder.Services.AddScoped<ResumeTailor>();
 builder.Services.AddScoped<IResumeTailorJob, ResumeTailorJob>();
 
+// Submission — Tier A API channels (AIRMVP1-303). DRY-RUN unless
+// FEATURES__ENABLE_LIVE_SUBMIT=true.
+builder.Services.Configure<Aireq.Worker.Submission.SubmissionOptions>(
+    builder.Configuration.GetSection(Aireq.Worker.Submission.SubmissionOptions.ConfigKey));
+builder.Services.AddHttpClient<Aireq.Worker.Submission.ISubmissionChannel, Aireq.Worker.Submission.GreenhouseSubmissionChannel>();
+builder.Services.AddHttpClient<Aireq.Worker.Submission.ISubmissionChannel, Aireq.Worker.Submission.LeverSubmissionChannel>();
+builder.Services.AddScoped<Aireq.Worker.Submission.SubmissionService>();
+builder.Services.AddScoped<ISubmissionJob, Aireq.Worker.Submission.SubmissionJob>();
+
 // --- Job implementations --------------------------------------------------
 // Hangfire resolves these from DI when it picks a job off the queue.
 // Scoped so each invocation gets fresh DbContext / HttpClient / etc.

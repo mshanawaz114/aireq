@@ -258,5 +258,8 @@ export const api = {
   tailor: (matchId: string) =>
     request<{ enqueued: string }>(`/api/matches/${matchId}/tailor`, { method: "POST" }),
 
+  submit: (matchId: string) =>
+    request<{ enqueued: string }>(`/api/matches/${matchId}/submit`, { method: "POST" }),
+
   adminMetrics: () => request<Metrics>("/api/admin/metrics", undefined, 10_000),
 };

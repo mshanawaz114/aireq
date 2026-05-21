@@ -158,6 +158,7 @@ app.MapMatchEndpoints();
 app.MapMetricsEndpoints();
 app.MapAtsEndpoints();
 app.MapTailorEndpoints();
+app.MapSubmitEndpoints();
 
 app.Run();
 

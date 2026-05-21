@@ -84,6 +84,8 @@ export default function MatchesPage() {
 
 function MatchCard({ match }: { match: Match }) {
   const [tailorState, setTailorState] = useState<"idle" | "queuing" | "queued" | "error">("idle");
+  const [submitState, setSubmitState] = useState<"idle" | "queuing" | "queued" | "error">("idle");
+  const isTailored = match.status === "Tailored" || match.status === "Submitted";
 
   async function onTailor() {
     setTailorState("queuing");
@@ -92,6 +94,16 @@ function MatchCard({ match }: { match: Match }) {
       setTailorState("queued");
     } catch {
       setTailorState("error");
+    }
+  }
+
+  async function onSubmit() {
+    setSubmitState("queuing");
+    try {
+      await api.submit(match.id);
+      setSubmitState("queued");
+    } catch {
+      setSubmitState("error");
     }
   }
 
@@ -145,17 +157,34 @@ function MatchCard({ match }: { match: Match }) {
             : tailorState === "queued" ? "Tailoring queued"
             : "Tailor & apply"}
         </button>
+        <button
+          type="button"
+          onClick={onSubmit}
+          disabled={!isTailored || submitState === "queuing" || submitState === "queued"}
+          title={isTailored ? undefined : "Tailor the resume first"}
+          className="rounded-md border border-ink-600 bg-ink-800 px-3.5 py-2 text-sm font-medium text-slate-200 hover:bg-ink-700 disabled:opacity-50"
+        >
+          {submitState === "queuing" ? "Submitting…"
+            : submitState === "queued" ? "Submission queued"
+            : "Submit application"}
+        </button>
+
         {tailorState === "queued" && (
           <span className="text-[11px] text-good-500" aria-live="polite">
-            Rewriting your resume in the background — check back shortly.
+            Rewriting your resume in the background — reload shortly, then submit.
           </span>
         )}
-        {tailorState === "error" && (
+        {submitState === "queued" && (
+          <span className="text-[11px] text-good-500" aria-live="polite">
+            Queued. Submissions are dry-run until you enable live submit.
+          </span>
+        )}
+        {(tailorState === "error" || submitState === "error") && (
           <span className="text-[11px] text-bad-500" role="alert">
-            Couldn&rsquo;t start tailoring. Try again.
+            Something went wrong. Try again.
           </span>
         )}
-        {tailorState === "idle" && !match.reasoned && (
+        {tailorState === "idle" && submitState === "idle" && !match.reasoned && (
           <span className="text-[11px] text-slate-500" aria-live="polite">
             Vector score — AI review pending
           </span>
