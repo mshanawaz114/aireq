@@ -21,6 +21,7 @@ public sealed class LeverSubmissionChannel(
     ILogger<LeverSubmissionChannel> log) : ISubmissionChannel
 {
     public SubmissionChannel Kind => SubmissionChannel.Api;
+    public int Tier => 0;
 
     public bool CanHandle(string jobSource) =>
         string.Equals(jobSource, "lever", StringComparison.OrdinalIgnoreCase);

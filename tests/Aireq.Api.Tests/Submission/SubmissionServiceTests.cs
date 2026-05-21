@@ -34,10 +34,15 @@ public sealed class SubmissionServiceTests
             .Options, new StubTenantContext());
 
     // A controllable channel that returns whatever outcome the test wants.
-    private sealed class StubChannel(string source, Func<SubmissionRequest, bool, SubmissionOutcome> respond)
+    private sealed class StubChannel(
+        string source,
+        Func<SubmissionRequest, bool, SubmissionOutcome> respond,
+        int tier = 0,
+        SubmissionChannel kind = SubmissionChannel.Api)
         : ISubmissionChannel
     {
-        public SubmissionChannel Kind => SubmissionChannel.Api;
+        public SubmissionChannel Kind => kind;
+        public int Tier => tier;
         public bool CanHandle(string jobSource) => string.Equals(jobSource, source, StringComparison.OrdinalIgnoreCase);
         public Task<SubmissionOutcome> SubmitAsync(SubmissionRequest r, bool live, CancellationToken ct) =>
             Task.FromResult(respond(r, live));
@@ -124,6 +129,28 @@ public sealed class SubmissionServiceTests
         var sub = await db.Submissions.SingleAsync();
         sub.Channel.Should().Be(SubmissionChannel.Manual);
         sub.ResponseStatus.Should().Be("pending_manual");
+    }
+
+    [Fact]
+    public async Task Falls_through_to_higher_tier_when_lower_tier_fails()
+    {
+        var dbName = $"submit-{Guid.NewGuid()}";
+        await using var db = NewDb(dbName);
+        var (match, blobs) = await SeedAsync(dbName, db);
+
+        // Tier 0 (API) fails; Tier 1 (Portal) succeeds. Both handle "greenhouse".
+        var tierA = new StubChannel("greenhouse", (_, _) => SubmissionOutcome.Failed(SubmissionChannel.Api, "{}"), tier: 0);
+        var tierB = new StubChannel("greenhouse", (_, _) => SubmissionOutcome.Received(SubmissionChannel.Portal, "{}"),
+            tier: 1, kind: SubmissionChannel.Portal);
+
+        // Register out of order to prove ordering is by Tier, not registration.
+        await Build(db, blobs, new ISubmissionChannel[] { tierB, tierA }, live: true)
+            .SubmitAsync(match.Id, CancellationToken.None);
+
+        var sub = await db.Submissions.SingleAsync();
+        sub.Channel.Should().Be(SubmissionChannel.Portal, "Tier A failed, fell through to Tier B");
+        sub.ResponseStatus.Should().Be("received");
+        (await db.Matches.IgnoreQueryFilters().SingleAsync()).Status.Should().Be(MatchStatus.Submitted);
     }
 
     [Fact]

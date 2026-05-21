@@ -17,6 +17,10 @@ using Aireq.Api.Storage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
+// 'Submission' is both this namespace and the entity type — alias the entity
+// so `new SubmissionRow { ... }` is unambiguous.
+using SubmissionRow = Aireq.Api.Data.Entities.Submission;
+
 namespace Aireq.Worker.Submission;
 
 public sealed class SubmissionService(
@@ -67,21 +71,30 @@ public sealed class SubmissionService(
             matchId, match.Job.Source, match.Job.SourceExternalId, match.Job.Company,
             first, last, ownerEmail, null, ms.ToArray(), $"{first}-{last}-resume.pdf");
 
-        var channel = channels.FirstOrDefault(c => c.CanHandle(match.Job.Source));
+        // Try handling channels lowest-tier first (API -> Playwright -> email),
+        // falling through on a "failed" outcome. The first non-failed result wins.
+        var handlers = channels.Where(c => c.CanHandle(match.Job.Source)).OrderBy(c => c.Tier).ToList();
         SubmissionOutcome outcome;
-        if (channel is null)
+        if (handlers.Count == 0)
         {
             // Tier D fallback — surfaced in the dashboard for manual handling.
-            log.LogInformation("Submit: no Tier-A channel for source '{Source}'; recording Manual.", match.Job.Source);
+            log.LogInformation("Submit: no channel for source '{Source}'; recording Manual.", match.Job.Source);
             outcome = new SubmissionOutcome(SubmissionChannel.Manual, "pending_manual",
                 $"{{\"reason\":\"no channel for source {match.Job.Source}\"}}");
         }
         else
         {
-            outcome = await channel.SubmitAsync(request, options.Value.EnableLiveSubmit, ct);
+            outcome = SubmissionOutcome.Failed(handlers[0].Kind, "{\"reason\":\"not attempted\"}");
+            foreach (var ch in handlers)
+            {
+                outcome = await ch.SubmitAsync(request, options.Value.EnableLiveSubmit, ct);
+                if (outcome.Status != "failed") break; // success or dry-run -> stop
+                log.LogWarning("Submit: tier {Tier} channel failed for match {MatchId}; trying next.",
+                    ch.Tier, matchId);
+            }
         }
 
-        db.Submissions.Add(new Submission
+        db.Submissions.Add(new SubmissionRow
         {
             MatchId = matchId,
             Channel = outcome.Channel,

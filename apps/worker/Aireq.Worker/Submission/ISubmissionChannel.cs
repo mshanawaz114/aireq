@@ -16,6 +16,13 @@ public interface ISubmissionChannel
     /// <summary>The Submission.Channel kind this implements (Api for Tier A).</summary>
     SubmissionChannel Kind { get; }
 
+    /// <summary>
+    /// Preference order — lower wins. 0 = Tier A (API), 1 = Tier B (Playwright),
+    /// 2 = Tier C (email). The orchestrator tries handling channels lowest-tier
+    /// first and falls through to the next tier on a "failed" outcome.
+    /// </summary>
+    int Tier { get; }
+
     /// <summary>True if this channel can submit to the given job source.</summary>
     bool CanHandle(string jobSource);
 

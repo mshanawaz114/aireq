@@ -149,6 +149,13 @@ builder.Services.Configure<Aireq.Worker.Submission.SubmissionOptions>(
     builder.Configuration.GetSection(Aireq.Worker.Submission.SubmissionOptions.ConfigKey));
 builder.Services.AddHttpClient<Aireq.Worker.Submission.ISubmissionChannel, Aireq.Worker.Submission.GreenhouseSubmissionChannel>();
 builder.Services.AddHttpClient<Aireq.Worker.Submission.ISubmissionChannel, Aireq.Worker.Submission.LeverSubmissionChannel>();
+
+// Tier B — Playwright per-ATS templates (AIRMVP1-304). Needs browser binaries
+// (`playwright install chromium`).
+builder.Services.AddSingleton<Aireq.Worker.Submission.Playwright.IAtsPortalTemplate, Aireq.Worker.Submission.Playwright.GreenhouseHostedTemplate>();
+builder.Services.AddSingleton<Aireq.Worker.Submission.Playwright.IAtsPortalTemplate, Aireq.Worker.Submission.Playwright.LeverHostedTemplate>();
+builder.Services.AddScoped<Aireq.Worker.Submission.ISubmissionChannel, Aireq.Worker.Submission.Playwright.PlaywrightSubmissionChannel>();
+
 builder.Services.AddScoped<Aireq.Worker.Submission.SubmissionService>();
 builder.Services.AddScoped<ISubmissionJob, Aireq.Worker.Submission.SubmissionJob>();
 
