@@ -65,6 +65,7 @@ public sealed class AireqDbContext(
     public DbSet<LlmCall> LlmCalls => Set<LlmCall>();
     public DbSet<EmailLog> EmailLogs => Set<EmailLog>();
     public DbSet<GmailAccount> GmailAccounts => Set<GmailAccount>();
+    public DbSet<Notification> Notifications => Set<Notification>();
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
@@ -318,6 +319,20 @@ public sealed class AireqDbContext(
             b.Property(x => x.LastHistoryId).HasMaxLength(64);
             // One connected mailbox per tenant in v1.
             b.HasIndex(x => x.TenantId).IsUnique();
+        });
+
+        // ---- Notification (in-app notifications + unread badge) ----
+        mb.Entity<Notification>(b =>
+        {
+            b.HasKey(x => x.Id);
+            b.Property(x => x.Type).IsRequired().HasMaxLength(32);
+            b.Property(x => x.Title).IsRequired().HasMaxLength(200);
+            b.Property(x => x.Body).HasMaxLength(Notification.MaxBodyChars);
+            b.Property(x => x.Link).HasMaxLength(500);
+            // Unread-first feed query: (tenant_id, read_at, created_at).
+            b.HasIndex(x => new { x.TenantId, x.ReadAt, x.CreatedAt });
+            b.HasQueryFilter(x =>
+                CurrentTenantId == null || x.TenantId == CurrentTenantId);
         });
 
         ApplySnakeCaseNaming(mb);

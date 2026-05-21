@@ -156,6 +156,23 @@ public sealed class ReplyClassifier(
                     });
                 }
 
+                // In-app notification (durable row; the worker is a separate
+                // process from the SignalR hub, so it surfaces on next client
+                // fetch/reconnect). One per newly-classified reply. (AIRMVP1-403)
+                var role = job is null ? "a role" : $"{job.Title} at {job.Company}";
+                db.Notifications.Add(new Notification
+                {
+                    TenantId = match.TenantId,
+                    Type = c.RequiresHuman ? "escalation" : "reply",
+                    Title = c.RequiresHuman
+                        ? $"Action needed: {c.Intent.Replace('_', ' ')}"
+                        : $"New reply ({c.Sentiment})",
+                    Body = Clamp($"{role} — {c.Summary}", Notification.MaxBodyChars),
+                    Link = $"/matches/{match.Id}",
+                    MatchId = match.Id,
+                    CreatedAt = DateTimeOffset.UtcNow,
+                });
+
                 classified++;
             }
             catch (LlmBudgetExceededException)

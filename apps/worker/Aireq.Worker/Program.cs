@@ -183,6 +183,13 @@ builder.Services.Configure<Aireq.Worker.Inbound.ReplyClassificationOptions>(
 builder.Services.AddScoped<Aireq.Worker.Inbound.ReplyClassifier>();
 builder.Services.AddScoped<Aireq.Worker.Inbound.IReplyClassifierRunner, Aireq.Worker.Inbound.ReplyClassifierRunner>();
 
+// --- Daily email digest (AIRMVP1-403) -------------------------------------
+// Once-a-day per-tenant activity summary through the throttled/dry-run sender.
+builder.Services.Configure<Aireq.Worker.Notifications.DigestOptions>(
+    builder.Configuration.GetSection(Aireq.Worker.Notifications.DigestOptions.ConfigKey));
+builder.Services.AddScoped<Aireq.Worker.Notifications.DigestService>();
+builder.Services.AddScoped<Aireq.Worker.Notifications.IDigestRunner, Aireq.Worker.Notifications.DigestRunner>();
+
 // --- Job implementations --------------------------------------------------
 // Hangfire resolves these from DI when it picks a job off the queue.
 // Scoped so each invocation gets fresh DbContext / HttpClient / etc.
@@ -306,6 +313,14 @@ using (var scope = app.Services.CreateScope())
         "reply-classification-pass",
         runner => runner.RunAsync(CancellationToken.None),
         replyClassifyOpts.Cron);
+
+    // Daily email digest (AIRMVP1-403). Default 13:00 UTC.
+    var digestOpts = scope.ServiceProvider
+        .GetRequiredService<Microsoft.Extensions.Options.IOptions<Aireq.Worker.Notifications.DigestOptions>>().Value;
+    recurring.AddOrUpdate<Aireq.Worker.Notifications.IDigestRunner>(
+        "daily-digest",
+        runner => runner.RunAsync(CancellationToken.None),
+        digestOpts.Cron);
 }
 
 app.Run();
