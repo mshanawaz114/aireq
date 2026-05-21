@@ -36,6 +36,7 @@ public interface ISubmissionChannel
 
 public sealed record SubmissionRequest(
     Guid MatchId,
+    Guid TenantId,
     string JobSource,
     string JobExternalId,
     string BoardToken,
