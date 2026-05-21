@@ -68,7 +68,7 @@ public sealed class SubmissionService(
         await pdfStream.CopyToAsync(ms, ct);
 
         var request = new SubmissionRequest(
-            matchId, match.Job.Source, match.Job.SourceExternalId, match.Job.Company,
+            matchId, match.TenantId, match.Job.Source, match.Job.SourceExternalId, match.Job.Company,
             first, last, ownerEmail, null, ms.ToArray(), $"{first}-{last}-resume.pdf");
 
         // Try handling channels lowest-tier first (API -> Playwright -> email),
@@ -91,6 +91,15 @@ public sealed class SubmissionService(
                 if (outcome.Status != "failed") break; // success or dry-run -> stop
                 log.LogWarning("Submit: tier {Tier} channel failed for match {MatchId}; trying next.",
                     ch.Tier, matchId);
+            }
+
+            // Every automated tier failed (e.g. API down + no JD recipient) ->
+            // surface for human handling (Tier D) rather than a dead "failed".
+            if (outcome.Status == "failed")
+            {
+                log.LogInformation("Submit: all channels failed for match {MatchId}; recording Manual.", matchId);
+                outcome = new SubmissionOutcome(SubmissionChannel.Manual, "pending_manual",
+                    outcome.PayloadJson);
             }
         }
 

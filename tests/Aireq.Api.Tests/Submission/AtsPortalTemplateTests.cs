@@ -17,7 +17,7 @@ namespace Aireq.Api.Tests.Submission;
 public sealed class AtsPortalTemplateTests
 {
     private static SubmissionRequest Req(string source, string board, string ext) =>
-        new(Guid.NewGuid(), source, ext, board, "Alice", "Architect", "a@x.com", null,
+        new(Guid.NewGuid(), Guid.NewGuid(), source, ext, board, "Alice", "Architect", "a@x.com", null,
             new byte[] { 1, 2, 3 }, "resume.pdf");
 
     [Fact]

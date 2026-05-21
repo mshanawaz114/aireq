@@ -156,6 +156,12 @@ builder.Services.AddSingleton<Aireq.Worker.Submission.Playwright.IAtsPortalTempl
 builder.Services.AddSingleton<Aireq.Worker.Submission.Playwright.IAtsPortalTemplate, Aireq.Worker.Submission.Playwright.LeverHostedTemplate>();
 builder.Services.AddScoped<Aireq.Worker.Submission.ISubmissionChannel, Aireq.Worker.Submission.Playwright.PlaywrightSubmissionChannel>();
 
+// Tier C — cold email (AIRMVP1-305). Also the shared email foundation (W4).
+builder.Services.Configure<Aireq.Worker.Email.EmailOptions>(
+    builder.Configuration.GetSection(Aireq.Worker.Email.EmailOptions.ConfigKey));
+builder.Services.AddHttpClient<Aireq.Shared.Email.IEmailSender, Aireq.Worker.Email.ResendEmailSender>();
+builder.Services.AddScoped<Aireq.Worker.Submission.ISubmissionChannel, Aireq.Worker.Submission.EmailSubmissionChannel>();
+
 builder.Services.AddScoped<Aireq.Worker.Submission.SubmissionService>();
 builder.Services.AddScoped<ISubmissionJob, Aireq.Worker.Submission.SubmissionJob>();
 

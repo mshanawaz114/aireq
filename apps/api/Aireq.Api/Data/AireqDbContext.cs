@@ -63,6 +63,7 @@ public sealed class AireqDbContext(
     public DbSet<Message> Messages => Set<Message>();
     public DbSet<Escalation> Escalations => Set<Escalation>();
     public DbSet<LlmCall> LlmCalls => Set<LlmCall>();
+    public DbSet<EmailLog> EmailLogs => Set<EmailLog>();
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
@@ -283,6 +284,22 @@ public sealed class AireqDbContext(
             b.HasIndex(x => new { x.TenantId, x.Model, x.CreatedAt });
             // For per-purpose cost analytics (and the dev dashboard).
             b.HasIndex(x => new { x.Purpose, x.CreatedAt });
+        });
+
+        // ---- EmailLog (audit + warmup throttle source-of-truth) ----
+        // Not tenant-filtered: warmup counts + admin reporting read across the
+        // tenant explicitly. (AIRMVP1-305)
+        mb.Entity<EmailLog>(b =>
+        {
+            b.HasKey(x => x.Id);
+            b.Property(x => x.ToAddress).IsRequired().HasMaxLength(254);
+            b.Property(x => x.Subject).IsRequired().HasMaxLength(500);
+            b.Property(x => x.Purpose).IsRequired().HasMaxLength(32);
+            b.Property(x => x.Status).IsRequired().HasMaxLength(16);
+            b.Property(x => x.ProviderMessageId).HasMaxLength(128);
+            b.Property(x => x.Body).HasMaxLength(EmailLog.MaxBodyChars);
+            // Warmup throttle query: (tenant_id, status, created_at).
+            b.HasIndex(x => new { x.TenantId, x.Status, x.CreatedAt });
         });
 
         ApplySnakeCaseNaming(mb);
