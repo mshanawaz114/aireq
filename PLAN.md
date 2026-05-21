@@ -104,6 +104,12 @@
 
 **Epic gate (MVP DONE):** ≥ 1 real recruiter reply received via the system. Second user can self-sign-up and reach matches. Bill ≤ $30.
 
+> **Status:** W1–W4 stories (101–107, 201–207, 301–307, 401–407) built + merged.
+> MVP gate verified via the manual UAT runbook (`docs/RUNBOOK-uat.md`) + the
+> automated E2E pair (`PipelineE2ETests`, `RecruiterReplyE2ETests`). Open items
+> rolled into `docs/BACKLOG.md` (notably AIR0002 CI/CD + AIR0005 a11y, deferred
+> web screens, and the SignalR backplane).
+
 ---
 
 ## Phase 2 — Multi-user GA
