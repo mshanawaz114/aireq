@@ -168,6 +168,14 @@ export interface AtsAnalysis {
   missingKeywords: string[];
 }
 
+export interface BillingStatus {
+  status: "trialing" | "active" | "past_due" | "canceled" | "trial_expired" | "incomplete";
+  entitled: boolean;
+  trialEndsAt: string | null;
+  currentPeriodEnd: string | null;
+  hasStripeCustomer: boolean;
+}
+
 export interface Metrics {
   jobs: { total: number; active: number; embedded: number; bySource: Record<string, number> };
   matches: { total: number; new: number; reasoned: number; avgScore: number };
@@ -283,6 +291,12 @@ export const api = {
         body: JSON.stringify(body),
         withAuth: false,
       }),
+  },
+
+  billing: {
+    status: () => request<BillingStatus>("/api/billing/status"),
+    checkout: () => request<{ url: string }>("/api/billing/checkout", { method: "POST" }, 15_000),
+    portal: () => request<{ url: string }>("/api/billing/portal", { method: "POST" }, 15_000),
   },
 
   adminMetrics: () => request<Metrics>("/api/admin/metrics", undefined, 10_000),
