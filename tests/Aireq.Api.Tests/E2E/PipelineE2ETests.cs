@@ -18,6 +18,7 @@ using Aireq.Api.Tests.Resumes;  // FakeBlobStorage
 using Aireq.Shared.Email;
 using Aireq.Worker.Matching;
 using Aireq.Worker.Submission;
+using Aireq.Worker.Tailoring;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
