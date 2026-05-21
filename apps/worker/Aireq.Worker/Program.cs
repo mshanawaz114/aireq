@@ -15,7 +15,6 @@ using Aireq.Shared.Jobs;
 using Aireq.Shared.Llm;
 using Aireq.Worker.Jobs;
 using Aireq.Worker.Jobs.Sources;
-using Aireq.Shared.Jobs;
 using Aireq.Worker.Llm;
 using Aireq.Worker.Matching;
 using Aireq.Worker.Resumes;
@@ -143,6 +142,15 @@ builder.Services.AddScoped<IMatchScoringRunner, MatchScoringRunner>();
 // Resume tailoring (AIRMVP1-302). On-demand: enqueued by the API.
 builder.Services.AddScoped<ResumeTailor>();
 builder.Services.AddScoped<IResumeTailorJob, ResumeTailorJob>();
+
+// Submission — Tier A API channels (AIRMVP1-303). DRY-RUN unless
+// FEATURES__ENABLE_LIVE_SUBMIT=true.
+builder.Services.Configure<Aireq.Worker.Submission.SubmissionOptions>(
+    builder.Configuration.GetSection(Aireq.Worker.Submission.SubmissionOptions.ConfigKey));
+builder.Services.AddHttpClient<Aireq.Worker.Submission.ISubmissionChannel, Aireq.Worker.Submission.GreenhouseSubmissionChannel>();
+builder.Services.AddHttpClient<Aireq.Worker.Submission.ISubmissionChannel, Aireq.Worker.Submission.LeverSubmissionChannel>();
+builder.Services.AddScoped<Aireq.Worker.Submission.SubmissionService>();
+builder.Services.AddScoped<ISubmissionJob, Aireq.Worker.Submission.SubmissionJob>();
 
 // --- Job implementations --------------------------------------------------
 // Hangfire resolves these from DI when it picks a job off the queue.
