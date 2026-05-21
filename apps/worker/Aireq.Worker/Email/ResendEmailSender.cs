@@ -48,7 +48,10 @@ public sealed class ResendEmailSender(
         }
 
         // Warmup throttle — count today's real sends for this tenant.
-        var dayStart = DateTimeOffset.UtcNow.Date;
+        // Explicit UTC-midnight DateTimeOffset (DateTimeOffset.UtcNow.Date returns
+        // a DateTime, whose mixed comparison shifts by the local offset).
+        var n = DateTimeOffset.UtcNow;
+        var dayStart = new DateTimeOffset(n.Year, n.Month, n.Day, 0, 0, 0, TimeSpan.Zero);
         var sentToday = await db.EmailLogs
             .Where(e => e.TenantId == msg.TenantId && e.Status == "sent" && e.CreatedAt >= dayStart)
             .CountAsync(ct);

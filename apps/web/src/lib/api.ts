@@ -149,6 +149,17 @@ export interface Match {
   missingKeywords: string[];
 }
 
+export interface Submission {
+  id: string;
+  matchId: string;
+  jobTitle: string;
+  company: string;
+  channel: string;
+  responseStatus: string | null;
+  submittedAt: string;
+  responsePayloadJson: string | null;
+}
+
 export interface AtsAnalysis {
   matchId: string;
   coveragePercent: number;
@@ -260,6 +271,10 @@ export const api = {
 
   submit: (matchId: string) =>
     request<{ enqueued: string }>(`/api/matches/${matchId}/submit`, { method: "POST" }),
+
+  submissions: {
+    list: () => request<Submission[]>("/api/submissions"),
+  },
 
   adminMetrics: () => request<Metrics>("/api/admin/metrics", undefined, 10_000),
 };
