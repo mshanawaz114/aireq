@@ -67,6 +67,7 @@ public sealed class AireqDbContext(
     public DbSet<GmailAccount> GmailAccounts => Set<GmailAccount>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<FollowUp> FollowUps => Set<FollowUp>();
+    public DbSet<WaitlistEntry> WaitlistEntries => Set<WaitlistEntry>();
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
@@ -350,6 +351,16 @@ public sealed class AireqDbContext(
             b.HasOne(x => x.Match).WithMany().HasForeignKey(x => x.MatchId);
             b.HasQueryFilter(x =>
                 CurrentTenantId == null || x.TenantId == CurrentTenantId);
+        });
+
+        // ---- WaitlistEntry (anonymous marketing signups; NOT tenant-scoped) ----
+        mb.Entity<WaitlistEntry>(b =>
+        {
+            b.HasKey(x => x.Id);
+            b.Property(x => x.Email).IsRequired().HasMaxLength(254);
+            b.Property(x => x.Persona).HasMaxLength(64);
+            b.Property(x => x.Source).HasMaxLength(128);
+            b.HasIndex(x => x.Email).IsUnique();
         });
 
         ApplySnakeCaseNaming(mb);

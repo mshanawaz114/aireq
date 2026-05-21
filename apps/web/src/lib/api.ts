@@ -276,5 +276,14 @@ export const api = {
     list: () => request<Submission[]>("/api/submissions"),
   },
 
+  waitlist: {
+    join: (body: { email: string; persona?: string | null; source?: string | null }) =>
+      request<{ joined: boolean; alreadyJoined: boolean }>("/api/waitlist", {
+        method: "POST",
+        body: JSON.stringify(body),
+        withAuth: false,
+      }),
+  },
+
   adminMetrics: () => request<Metrics>("/api/admin/metrics", undefined, 10_000),
 };
