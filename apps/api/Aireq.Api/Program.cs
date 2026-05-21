@@ -85,8 +85,23 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
             ClockSkew = TimeSpan.FromSeconds(30),
         };
+
+        // SignalR WebSockets can't send an Authorization header, so accept the
+        // bearer from the `access_token` query string on /hubs paths. (AIRMVP1-403)
+        o.Events = new JwtBearerEvents
+        {
+            OnMessageReceived = ctx =>
+            {
+                var accessToken = ctx.Request.Query["access_token"];
+                var path = ctx.HttpContext.Request.Path;
+                if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+                    ctx.Token = accessToken;
+                return Task.CompletedTask;
+            },
+        };
     });
 builder.Services.AddAuthorization();
+builder.Services.AddSignalR();
 
 // Tenant context — Scoped so each request gets the right values from its JWT.
 builder.Services.AddHttpContextAccessor();
@@ -107,6 +122,7 @@ builder.Services.AddScoped<Aireq.Api.Metrics.MetricsService>();
 builder.Services.AddScoped<Aireq.Api.Ats.AtsAnalysisService>();
 builder.Services.AddScoped<Aireq.Api.Submissions.SubmissionListService>();
 builder.Services.AddScoped<Aireq.Api.Escalations.EscalationService>();
+builder.Services.AddScoped<Aireq.Api.Notifications.NotificationService>();
 
 // --- Gmail "connect your inbox" OAuth (AIRMVP1-401) ------------------------
 // Server side of the consent flow; the worker polls the connected mailbox.
@@ -172,7 +188,12 @@ app.MapTailorEndpoints();
 app.MapSubmitEndpoints();
 app.MapSubmissionListEndpoints();
 app.MapEscalationEndpoints();
+app.MapNotificationEndpoints();
 app.MapGmailEndpoints();
+
+// SignalR notifications hub (AIRMVP1-403). Auth enforced by [Authorize] on the
+// hub + the query-string token reader wired into JwtBearer above.
+app.MapHub<Aireq.Api.Notifications.NotificationsHub>("/hubs/notifications");
 
 app.Run();
 
