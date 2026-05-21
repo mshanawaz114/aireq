@@ -12,6 +12,9 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Xunit;
 
+// 'Submission' collides with a namespace in scope — alias the entity.
+using SubmissionRow = Aireq.Api.Data.Entities.Submission;
+
 namespace Aireq.Api.Tests.Submissions;
 
 public sealed class SubmissionListServiceTests
@@ -42,8 +45,8 @@ public sealed class SubmissionListServiceTests
             var m1 = new Match { TenantId = t.Id, ConsultantId = c.Id, JobId = j1.Id, Score = 70 };
             var m2 = new Match { TenantId = t.Id, ConsultantId = c.Id, JobId = j2.Id, Score = 80 };
             seed.AddRange(t, c, j1, j2, m1, m2);
-            seed.Submissions.Add(new Submission { MatchId = m1.Id, Channel = SubmissionChannel.Api, ResponseStatus = "dry_run", SubmittedAt = DateTimeOffset.UtcNow.AddHours(-2) });
-            seed.Submissions.Add(new Submission { MatchId = m2.Id, Channel = SubmissionChannel.Email, ResponseStatus = "received", SubmittedAt = DateTimeOffset.UtcNow });
+            seed.Submissions.Add(new SubmissionRow { MatchId = m1.Id, Channel = SubmissionChannel.Api, ResponseStatus = "dry_run", SubmittedAt = DateTimeOffset.UtcNow.AddHours(-2) });
+            seed.Submissions.Add(new SubmissionRow { MatchId = m2.Id, Channel = SubmissionChannel.Email, ResponseStatus = "received", SubmittedAt = DateTimeOffset.UtcNow });
             await seed.SaveChangesAsync();
             tenantId = t.Id;
         }
@@ -72,8 +75,8 @@ public sealed class SubmissionListServiceTests
             var ma = new Match { TenantId = a.Id, ConsultantId = ca.Id, JobId = ja.Id, Score = 70 };
             var mb = new Match { TenantId = b.Id, ConsultantId = cb.Id, JobId = jb.Id, Score = 90 };
             seed.AddRange(a, b, ca, cb, ja, jb, ma, mb);
-            seed.Submissions.Add(new Submission { MatchId = ma.Id, Channel = SubmissionChannel.Api, ResponseStatus = "dry_run", SubmittedAt = DateTimeOffset.UtcNow });
-            seed.Submissions.Add(new Submission { MatchId = mb.Id, Channel = SubmissionChannel.Api, ResponseStatus = "received", SubmittedAt = DateTimeOffset.UtcNow });
+            seed.Submissions.Add(new SubmissionRow { MatchId = ma.Id, Channel = SubmissionChannel.Api, ResponseStatus = "dry_run", SubmittedAt = DateTimeOffset.UtcNow });
+            seed.Submissions.Add(new SubmissionRow { MatchId = mb.Id, Channel = SubmissionChannel.Api, ResponseStatus = "received", SubmittedAt = DateTimeOffset.UtcNow });
             await seed.SaveChangesAsync();
             tenantAId = a.Id;
         }
