@@ -17,6 +17,10 @@ using Aireq.Api.Storage;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 
+// 'Submission' is both this namespace and the entity type — alias the entity
+// so `new SubmissionRow { ... }` is unambiguous.
+using SubmissionRow = Aireq.Api.Data.Entities.Submission;
+
 namespace Aireq.Worker.Submission;
 
 public sealed class SubmissionService(
@@ -81,7 +85,7 @@ public sealed class SubmissionService(
             outcome = await channel.SubmitAsync(request, options.Value.EnableLiveSubmit, ct);
         }
 
-        db.Submissions.Add(new Submission
+        db.Submissions.Add(new SubmissionRow
         {
             MatchId = matchId,
             Channel = outcome.Channel,
