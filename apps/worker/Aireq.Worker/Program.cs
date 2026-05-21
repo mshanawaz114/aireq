@@ -175,6 +175,14 @@ builder.Services.AddHttpClient<Aireq.Worker.Inbound.IGmailClient, Aireq.Worker.I
 builder.Services.AddScoped<Aireq.Worker.Inbound.InboundMessageProcessor>();
 builder.Services.AddScoped<Aireq.Worker.Inbound.IGmailInboundRunner, Aireq.Worker.Inbound.GmailInboundPoller>();
 
+// --- Reply classification + escalation (AIRMVP1-402) ----------------------
+// Haiku-classifies each newly-threaded reply, advances the match, and raises an
+// Escalation when a human must act. Runs just behind the inbound poll.
+builder.Services.Configure<Aireq.Worker.Inbound.ReplyClassificationOptions>(
+    builder.Configuration.GetSection(Aireq.Worker.Inbound.ReplyClassificationOptions.ConfigKey));
+builder.Services.AddScoped<Aireq.Worker.Inbound.ReplyClassifier>();
+builder.Services.AddScoped<Aireq.Worker.Inbound.IReplyClassifierRunner, Aireq.Worker.Inbound.ReplyClassifierRunner>();
+
 // --- Job implementations --------------------------------------------------
 // Hangfire resolves these from DI when it picks a job off the queue.
 // Scoped so each invocation gets fresh DbContext / HttpClient / etc.
@@ -290,6 +298,14 @@ using (var scope = app.Services.CreateScope())
         "gmail-inbound-poll",
         runner => runner.RunAsync(CancellationToken.None),
         gmailInboundOpts.Cron);
+
+    // Reply classification + escalation (AIRMVP1-402). Default every 5 min.
+    var replyClassifyOpts = scope.ServiceProvider
+        .GetRequiredService<Microsoft.Extensions.Options.IOptions<Aireq.Worker.Inbound.ReplyClassificationOptions>>().Value;
+    recurring.AddOrUpdate<Aireq.Worker.Inbound.IReplyClassifierRunner>(
+        "reply-classification-pass",
+        runner => runner.RunAsync(CancellationToken.None),
+        replyClassifyOpts.Cron);
 }
 
 app.Run();

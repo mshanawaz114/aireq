@@ -106,6 +106,7 @@ builder.Services.AddScoped<Aireq.Api.Matches.MatchListService>();
 builder.Services.AddScoped<Aireq.Api.Metrics.MetricsService>();
 builder.Services.AddScoped<Aireq.Api.Ats.AtsAnalysisService>();
 builder.Services.AddScoped<Aireq.Api.Submissions.SubmissionListService>();
+builder.Services.AddScoped<Aireq.Api.Escalations.EscalationService>();
 
 // --- Gmail "connect your inbox" OAuth (AIRMVP1-401) ------------------------
 // Server side of the consent flow; the worker polls the connected mailbox.
@@ -170,6 +171,7 @@ app.MapAtsEndpoints();
 app.MapTailorEndpoints();
 app.MapSubmitEndpoints();
 app.MapSubmissionListEndpoints();
+app.MapEscalationEndpoints();
 app.MapGmailEndpoints();
 
 app.Run();

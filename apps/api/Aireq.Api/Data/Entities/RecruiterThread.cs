@@ -23,6 +23,11 @@ public sealed class RecruiterThread : ITimestamped
     /// <summary>True when the AI marks the thread as needing human action.</summary>
     public bool RequiresHuman { get; set; }
 
+    /// <summary>Watermark: the LastInboundAt value at the time of the most recent
+    /// classification. A thread is (re)classified only when a newer inbound has
+    /// arrived since (LastInboundAt &gt; LastClassifiedAt). (AIRMVP1-402)</summary>
+    public DateTimeOffset? LastClassifiedAt { get; set; }
+
     public DateTimeOffset CreatedAt { get; set; }
     public DateTimeOffset UpdatedAt { get; set; }
 
