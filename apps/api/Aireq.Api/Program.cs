@@ -9,6 +9,7 @@
 // Refs: AIRMVP1-101
 
 using Aireq.Api.Auth;
+using Aireq.Api.Billing;
 using Aireq.Api.Consultants;
 using Aireq.Api.Data;
 using Aireq.Api.Data.Entities;
@@ -127,6 +128,15 @@ builder.Services.AddScoped<Aireq.Api.Notifications.NotificationService>();
 builder.Services.AddScoped<Aireq.Api.FollowUps.FollowUpService>();
 builder.Services.AddScoped<Aireq.Api.Marketing.WaitlistService>();
 
+// --- Stripe billing (AIRMVP1-406) ------------------------------------------
+// Raw-HTTPS Stripe client + entitlement service. Self-disables until
+// STRIPE_SECRET_KEY + STRIPE__PRICEID are set; 14-day trial works without it.
+builder.Services.Configure<Aireq.Api.Billing.BillingOptions>(
+    builder.Configuration.GetSection(Aireq.Api.Billing.BillingOptions.ConfigKey));
+builder.Services.AddHttpClient<Aireq.Api.Billing.StripeClient>(c =>
+    c.Timeout = TimeSpan.FromSeconds(30));
+builder.Services.AddScoped<Aireq.Api.Billing.BillingService>();
+
 // --- Gmail "connect your inbox" OAuth (AIRMVP1-401) ------------------------
 // Server side of the consent flow; the worker polls the connected mailbox.
 // Self-disables (connect endpoint 503s) until GOOGLE_CLIENT_ID/SECRET are set.
@@ -195,6 +205,7 @@ app.MapNotificationEndpoints();
 app.MapFollowUpEndpoints();
 app.MapGmailEndpoints();
 app.MapWaitlistEndpoints();
+app.MapBillingEndpoints();
 
 // SignalR notifications hub (AIRMVP1-403). Auth enforced by [Authorize] on the
 // hub + the query-string token reader wired into JwtBearer above.
