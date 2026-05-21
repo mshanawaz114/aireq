@@ -219,6 +219,17 @@ if (app.Environment.IsDevelopment())
         var id = jobs.Enqueue<IMatchScoringRunner>(r => r.RunAsync(CancellationToken.None));
         return Results.Ok(new { enqueued = id });
     });
+
+    // Bug-bash convenience (AIRMVP1-307): run the whole discovery pipeline in
+    // sequence — ingest -> embed -> match -> score — via Hangfire continuations.
+    app.MapPost("/jobs/pipeline", (IBackgroundJobClient jobs) =>
+    {
+        var ingest = jobs.Enqueue<IJobIngestionRunner>(r => r.RunAsync(CancellationToken.None));
+        var embed = jobs.ContinueJobWith<IEmbeddingRunner>(ingest, r => r.RunAsync(CancellationToken.None));
+        var match = jobs.ContinueJobWith<IMatchingRunner>(embed, r => r.RunAsync(CancellationToken.None));
+        var score = jobs.ContinueJobWith<IMatchScoringRunner>(match, r => r.RunAsync(CancellationToken.None));
+        return Results.Ok(new { ingest, embed, match, score });
+    });
 }
 
 // --- Recurring jobs --------------------------------------------------------
