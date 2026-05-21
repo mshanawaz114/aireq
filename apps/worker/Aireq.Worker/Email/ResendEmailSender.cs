@@ -111,6 +111,7 @@ public sealed class ResendEmailSender(
             Purpose = msg.Purpose,
             Status = status,
             ProviderMessageId = providerId,
+            CorrelationMatchId = msg.CorrelationMatchId,
             Body = Truncate(msg.HtmlBody),
             CreatedAt = DateTimeOffset.UtcNow,
         });

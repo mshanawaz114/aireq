@@ -165,6 +165,16 @@ builder.Services.AddScoped<Aireq.Worker.Submission.ISubmissionChannel, Aireq.Wor
 builder.Services.AddScoped<Aireq.Worker.Submission.SubmissionService>();
 builder.Services.AddScoped<ISubmissionJob, Aireq.Worker.Submission.SubmissionJob>();
 
+// --- Inbound Gmail polling + thread matching (AIRMVP1-401) ----------------
+// Pulls recruiter replies for every connected mailbox and threads them back to
+// the originating Match. Self-no-ops until GOOGLE_CLIENT_ID/SECRET are set.
+builder.Services.Configure<Aireq.Worker.Inbound.GmailInboundOptions>(
+    builder.Configuration.GetSection(Aireq.Worker.Inbound.GmailInboundOptions.ConfigKey));
+builder.Services.AddHttpClient<Aireq.Worker.Inbound.IGmailClient, Aireq.Worker.Inbound.GmailClient>(c =>
+    c.Timeout = TimeSpan.FromMinutes(1));
+builder.Services.AddScoped<Aireq.Worker.Inbound.InboundMessageProcessor>();
+builder.Services.AddScoped<Aireq.Worker.Inbound.IGmailInboundRunner, Aireq.Worker.Inbound.GmailInboundPoller>();
+
 // --- Job implementations --------------------------------------------------
 // Hangfire resolves these from DI when it picks a job off the queue.
 // Scoped so each invocation gets fresh DbContext / HttpClient / etc.
@@ -272,6 +282,14 @@ using (var scope = app.Services.CreateScope())
         "match-scoring-pass",
         runner => runner.RunAsync(CancellationToken.None),
         scoringOpts.Cron);
+
+    // Inbound Gmail reply polling (AIRMVP1-401). Default every 5 min.
+    var gmailInboundOpts = scope.ServiceProvider
+        .GetRequiredService<Microsoft.Extensions.Options.IOptions<Aireq.Worker.Inbound.GmailInboundOptions>>().Value;
+    recurring.AddOrUpdate<Aireq.Worker.Inbound.IGmailInboundRunner>(
+        "gmail-inbound-poll",
+        runner => runner.RunAsync(CancellationToken.None),
+        gmailInboundOpts.Cron);
 }
 
 app.Run();

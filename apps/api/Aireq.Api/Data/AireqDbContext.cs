@@ -64,6 +64,7 @@ public sealed class AireqDbContext(
     public DbSet<Escalation> Escalations => Set<Escalation>();
     public DbSet<LlmCall> LlmCalls => Set<LlmCall>();
     public DbSet<EmailLog> EmailLogs => Set<EmailLog>();
+    public DbSet<GmailAccount> GmailAccounts => Set<GmailAccount>();
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
@@ -252,7 +253,10 @@ public sealed class AireqDbContext(
             b.Property(x => x.Body).IsRequired().HasMaxLength(50_000);
             b.Property(x => x.AiModel).HasMaxLength(64);
             b.Property(x => x.PromptHash).HasMaxLength(64);
+            b.Property(x => x.ProviderMessageId).HasMaxLength(128);
             b.HasIndex(x => new { x.ThreadId, x.SentAt });
+            // Inbound dedupe: skip a Gmail message we've already threaded. (AIRMVP1-401)
+            b.HasIndex(x => x.ProviderMessageId);
             b.HasOne(x => x.Thread).WithMany(t => t.Messages).HasForeignKey(x => x.ThreadId);
         });
 
@@ -300,6 +304,20 @@ public sealed class AireqDbContext(
             b.Property(x => x.Body).HasMaxLength(EmailLog.MaxBodyChars);
             // Warmup throttle query: (tenant_id, status, created_at).
             b.HasIndex(x => new { x.TenantId, x.Status, x.CreatedAt });
+            // Reply correlation: look up by recipient address. (AIRMVP1-401)
+            b.HasIndex(x => x.ToAddress);
+        });
+
+        // ---- GmailAccount (per-tenant connected mailbox + OAuth tokens) ----
+        mb.Entity<GmailAccount>(b =>
+        {
+            b.HasKey(x => x.Id);
+            b.Property(x => x.EmailAddress).IsRequired().HasMaxLength(254);
+            b.Property(x => x.RefreshToken).IsRequired().HasMaxLength(512);
+            b.Property(x => x.AccessToken).HasMaxLength(2048);
+            b.Property(x => x.LastHistoryId).HasMaxLength(64);
+            // One connected mailbox per tenant in v1.
+            b.HasIndex(x => x.TenantId).IsUnique();
         });
 
         ApplySnakeCaseNaming(mb);
