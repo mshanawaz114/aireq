@@ -123,6 +123,7 @@ builder.Services.AddScoped<Aireq.Api.Ats.AtsAnalysisService>();
 builder.Services.AddScoped<Aireq.Api.Submissions.SubmissionListService>();
 builder.Services.AddScoped<Aireq.Api.Escalations.EscalationService>();
 builder.Services.AddScoped<Aireq.Api.Notifications.NotificationService>();
+builder.Services.AddScoped<Aireq.Api.FollowUps.FollowUpService>();
 
 // --- Gmail "connect your inbox" OAuth (AIRMVP1-401) ------------------------
 // Server side of the consent flow; the worker polls the connected mailbox.
@@ -189,6 +190,7 @@ app.MapSubmitEndpoints();
 app.MapSubmissionListEndpoints();
 app.MapEscalationEndpoints();
 app.MapNotificationEndpoints();
+app.MapFollowUpEndpoints();
 app.MapGmailEndpoints();
 
 // SignalR notifications hub (AIRMVP1-403). Auth enforced by [Authorize] on the

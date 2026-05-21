@@ -66,6 +66,7 @@ public sealed class AireqDbContext(
     public DbSet<EmailLog> EmailLogs => Set<EmailLog>();
     public DbSet<GmailAccount> GmailAccounts => Set<GmailAccount>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<FollowUp> FollowUps => Set<FollowUp>();
 
     protected override void OnModelCreating(ModelBuilder mb)
     {
@@ -331,6 +332,22 @@ public sealed class AireqDbContext(
             b.Property(x => x.Link).HasMaxLength(500);
             // Unread-first feed query: (tenant_id, read_at, created_at).
             b.HasIndex(x => new { x.TenantId, x.ReadAt, x.CreatedAt });
+            b.HasQueryFilter(x =>
+                CurrentTenantId == null || x.TenantId == CurrentTenantId);
+        });
+
+        // ---- FollowUp (planned recruiter nudges; owner-approval default) ----
+        mb.Entity<FollowUp>(b =>
+        {
+            b.HasKey(x => x.Id);
+            b.Property(x => x.Recipient).IsRequired().HasMaxLength(254);
+            b.Property(x => x.DraftSubject).IsRequired().HasMaxLength(500);
+            b.Property(x => x.DraftBody).IsRequired().HasMaxLength(FollowUp.MaxBodyChars);
+            b.Property(x => x.Status).HasConversion<string>().HasMaxLength(16);
+            b.Property(x => x.FailureReason).HasMaxLength(500);
+            b.HasIndex(x => new { x.TenantId, x.Status });
+            b.HasIndex(x => new { x.MatchId, x.Status });
+            b.HasOne(x => x.Match).WithMany().HasForeignKey(x => x.MatchId);
             b.HasQueryFilter(x =>
                 CurrentTenantId == null || x.TenantId == CurrentTenantId);
         });
