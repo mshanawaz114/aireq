@@ -77,7 +77,8 @@ public sealed partial class EmailSubmissionChannel(
             HtmlBody: html,
             Purpose: "apply",
             Attachment: r.ResumePdf,
-            AttachmentName: r.ResumeFileName), live, ct);
+            AttachmentName: r.ResumeFileName,
+            CorrelationMatchId: r.MatchId), live, ct);
 
         var payload = $"{{\"recipient\":\"{recipient}\",\"emailStatus\":\"{result.Status}\"}}";
         return result.Status switch

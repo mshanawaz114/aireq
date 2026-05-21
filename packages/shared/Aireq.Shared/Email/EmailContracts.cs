@@ -7,6 +7,7 @@ namespace Aireq.Shared.Email;
 
 /// <param name="TenantId">Tenant the send is attributed + throttled against. Null for system mail.</param>
 /// <param name="Purpose">Call-site tag: "apply" | "followup" | "digest".</param>
+/// <param name="CorrelationMatchId">Match this email relates to, so an inbound reply threads back to it.</param>
 public sealed record EmailMessage(
     Guid? TenantId,
     string To,
@@ -14,7 +15,8 @@ public sealed record EmailMessage(
     string HtmlBody,
     string Purpose,
     byte[]? Attachment = null,
-    string? AttachmentName = null);
+    string? AttachmentName = null,
+    Guid? CorrelationMatchId = null);
 
 /// <param name="Status">sent | dry_run | throttled | failed.</param>
 public sealed record EmailResult(string Status, string? ProviderMessageId)

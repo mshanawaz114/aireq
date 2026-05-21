@@ -32,6 +32,10 @@ public sealed class EmailLog
     /// <summary>Provider (Resend) message id when sent; null otherwise.</summary>
     public string? ProviderMessageId { get; set; }
 
+    /// <summary>The Match this email relates to (apply emails), so an inbound
+    /// reply from the recipient can be threaded back to it. (AIRMVP1-401)</summary>
+    public Guid? CorrelationMatchId { get; set; }
+
     /// <summary>Body, truncated to <see cref="MaxBodyChars"/> for the audit row.</summary>
     public string? Body { get; set; }
 

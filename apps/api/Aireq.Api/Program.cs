@@ -13,6 +13,7 @@ using Aireq.Api.Consultants;
 using Aireq.Api.Data;
 using Aireq.Api.Data.Entities;
 using Aireq.Api.Endpoints;
+using Aireq.Api.Integrations;
 using Aireq.Api.Resumes;
 using Aireq.Api.Storage;
 using Aireq.Shared.Db;
@@ -106,6 +107,14 @@ builder.Services.AddScoped<Aireq.Api.Metrics.MetricsService>();
 builder.Services.AddScoped<Aireq.Api.Ats.AtsAnalysisService>();
 builder.Services.AddScoped<Aireq.Api.Submissions.SubmissionListService>();
 
+// --- Gmail "connect your inbox" OAuth (AIRMVP1-401) ------------------------
+// Server side of the consent flow; the worker polls the connected mailbox.
+// Self-disables (connect endpoint 503s) until GOOGLE_CLIENT_ID/SECRET are set.
+builder.Services.Configure<Aireq.Api.Integrations.GmailOAuthOptions>(
+    builder.Configuration.GetSection(Aireq.Api.Integrations.GmailOAuthOptions.ConfigKey));
+builder.Services.AddHttpClient<Aireq.Api.Integrations.GmailOAuthService>(c =>
+    c.Timeout = TimeSpan.FromSeconds(30));
+
 // Allow multipart bodies up to 10 MB — matches UploadResumeService.MaxBytes.
 builder.Services.Configure<FormOptions>(opts =>
 {
@@ -161,6 +170,7 @@ app.MapAtsEndpoints();
 app.MapTailorEndpoints();
 app.MapSubmitEndpoints();
 app.MapSubmissionListEndpoints();
+app.MapGmailEndpoints();
 
 app.Run();
 

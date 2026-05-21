@@ -16,6 +16,11 @@ public sealed class Message
 
     public DateTimeOffset SentAt { get; set; }
 
+    /// <summary>Provider (Gmail) message id for inbound mail — the dedupe key so
+    /// repeated polls never double-insert the same reply. Null for outbound mail
+    /// composed by us. (AIRMVP1-401)</summary>
+    public string? ProviderMessageId { get; set; }
+
     /// <summary>True for outbound messages composed by the AI.</summary>
     public bool GeneratedByAi { get; set; }
 
