@@ -190,6 +190,15 @@ builder.Services.Configure<Aireq.Worker.Notifications.DigestOptions>(
 builder.Services.AddScoped<Aireq.Worker.Notifications.DigestService>();
 builder.Services.AddScoped<Aireq.Worker.Notifications.IDigestRunner, Aireq.Worker.Notifications.DigestRunner>();
 
+// --- Auto follow-up nudges (AIRMVP1-404) ----------------------------------
+// Plan rate-limited nudges for quiet applications (owner-approval default) and
+// send approved ones through the throttled/dry-run sender.
+builder.Services.Configure<Aireq.Worker.FollowUps.FollowUpOptions>(
+    builder.Configuration.GetSection(Aireq.Worker.FollowUps.FollowUpOptions.ConfigKey));
+builder.Services.AddScoped<Aireq.Worker.FollowUps.FollowUpPlanner>();
+builder.Services.AddScoped<Aireq.Worker.FollowUps.FollowUpSender>();
+builder.Services.AddScoped<Aireq.Worker.FollowUps.IFollowUpRunner, Aireq.Worker.FollowUps.FollowUpRunner>();
+
 // --- Job implementations --------------------------------------------------
 // Hangfire resolves these from DI when it picks a job off the queue.
 // Scoped so each invocation gets fresh DbContext / HttpClient / etc.
@@ -321,6 +330,14 @@ using (var scope = app.Services.CreateScope())
         "daily-digest",
         runner => runner.RunAsync(CancellationToken.None),
         digestOpts.Cron);
+
+    // Auto follow-up nudges (AIRMVP1-404). Default hourly.
+    var followUpOpts = scope.ServiceProvider
+        .GetRequiredService<Microsoft.Extensions.Options.IOptions<Aireq.Worker.FollowUps.FollowUpOptions>>().Value;
+    recurring.AddOrUpdate<Aireq.Worker.FollowUps.IFollowUpRunner>(
+        "follow-up-pass",
+        runner => runner.RunAsync(CancellationToken.None),
+        followUpOpts.Cron);
 }
 
 app.Run();
