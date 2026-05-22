@@ -72,7 +72,12 @@ async function request<T>(path: string, init?: RequestOptions, timeoutMs = 5_000
       }
       throw new ApiError(res.status, bodyMessage ?? `${res.status} ${res.statusText}`);
     }
-    return (await res.json()) as T;
+    // 204 / empty body (e.g. resolve, approve, mark-read) — nothing to parse.
+    if (res.status === 204 || res.headers.get("content-length") === "0") {
+      return undefined as T;
+    }
+    const text = await res.text();
+    return (text ? JSON.parse(text) : undefined) as T;
   } finally {
     clearTimeout(t);
   }
@@ -166,6 +171,72 @@ export interface AtsAnalysis {
   jobKeywordCount: number;
   presentKeywords: string[];
   missingKeywords: string[];
+}
+
+export interface Escalation {
+  id: string;
+  matchId: string;
+  jobTitle: string;
+  company: string;
+  recruiterEmail: string | null;
+  recruiterName: string | null;
+  sentiment: string | null;
+  reason: string;
+  summary: string | null;
+  createdAt: string;
+  resolvedAt: string | null;
+}
+
+export interface ThreadMessage {
+  id: string;
+  direction: "Inbound" | "Outbound";
+  subject: string | null;
+  body: string;
+  sentAt: string;
+  generatedByAi: boolean;
+}
+
+export interface Thread {
+  id: string;
+  matchId: string;
+  jobTitle: string;
+  company: string;
+  recruiterEmail: string;
+  recruiterName: string | null;
+  sentiment: string | null;
+  requiresHuman: boolean;
+  lastInboundAt: string | null;
+  messages: ThreadMessage[];
+}
+
+export interface FollowUp {
+  id: string;
+  matchId: string;
+  jobTitle: string;
+  company: string;
+  recipient: string;
+  draftSubject: string;
+  draftBody: string;
+  sequence: number;
+  status: string;
+  createdAt: string;
+  sentAt: string | null;
+}
+
+export interface NotificationItem {
+  id: string;
+  type: string;
+  title: string;
+  body: string | null;
+  link: string | null;
+  matchId: string | null;
+  read: boolean;
+  createdAt: string;
+}
+
+export interface NotificationFeed {
+  items: NotificationItem[];
+  unreadCount: number;
 }
 
 export interface BillingStatus {
@@ -297,6 +368,28 @@ export const api = {
     status: () => request<BillingStatus>("/api/billing/status"),
     checkout: () => request<{ url: string }>("/api/billing/checkout", { method: "POST" }, 15_000),
     portal: () => request<{ url: string }>("/api/billing/portal", { method: "POST" }, 15_000),
+  },
+
+  escalations: {
+    list: (open = true) => request<Escalation[]>(`/api/escalations?open=${open}`),
+    resolve: (id: string) =>
+      request<void>(`/api/escalations/${id}/resolve`, { method: "POST" }),
+  },
+
+  threads: {
+    list: () => request<Thread[]>("/api/threads", undefined, 10_000),
+  },
+
+  followups: {
+    list: (pending = true) => request<FollowUp[]>(`/api/followups?pending=${pending}`),
+    approve: (id: string) => request<void>(`/api/followups/${id}/approve`, { method: "POST" }),
+    cancel: (id: string) => request<void>(`/api/followups/${id}/cancel`, { method: "POST" }),
+  },
+
+  notifications: {
+    feed: () => request<NotificationFeed>("/api/notifications"),
+    read: (id: string) => request<void>(`/api/notifications/${id}/read`, { method: "POST" }),
+    readAll: () => request<{ marked: number }>("/api/notifications/read-all", { method: "POST" }),
   },
 
   adminMetrics: () => request<Metrics>("/api/admin/metrics", undefined, 10_000),

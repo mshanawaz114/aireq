@@ -127,6 +127,7 @@ builder.Services.AddScoped<Aireq.Api.Escalations.EscalationService>();
 builder.Services.AddScoped<Aireq.Api.Notifications.NotificationService>();
 builder.Services.AddScoped<Aireq.Api.FollowUps.FollowUpService>();
 builder.Services.AddScoped<Aireq.Api.Marketing.WaitlistService>();
+builder.Services.AddScoped<Aireq.Api.Threads.ThreadService>();
 
 // --- Stripe billing (AIRMVP1-406) ------------------------------------------
 // Raw-HTTPS Stripe client + entitlement service. Self-disables until
@@ -203,6 +204,7 @@ app.MapSubmissionListEndpoints();
 app.MapEscalationEndpoints();
 app.MapNotificationEndpoints();
 app.MapFollowUpEndpoints();
+app.MapThreadEndpoints();
 app.MapGmailEndpoints();
 app.MapWaitlistEndpoints();
 app.MapBillingEndpoints();

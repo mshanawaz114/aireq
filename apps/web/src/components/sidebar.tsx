@@ -10,6 +10,7 @@ import {
   FileText,
   Inbox,
   AlertTriangle,
+  Send,
   Settings,
   type LucideIcon,
 } from "lucide-react";
@@ -31,6 +32,7 @@ const nav: readonly NavItem[] = [
   { href: "/submissions", label: "Submissions",        Icon: FileText },
   { href: "/inbox",       label: "Recruiter Inbox",    Icon: Inbox },
   { href: "/escalations", label: "Escalations",        Icon: AlertTriangle },
+  { href: "/followups",   label: "Follow-ups",         Icon: Send },
 ];
 
 export function Sidebar() {

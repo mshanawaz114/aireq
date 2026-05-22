@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/sidebar";
 import { HealthBadge } from "@/components/health-badge";
+import { NotificationBell } from "@/components/notification-bell";
 import { useSession } from "@/hooks/use-session";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
@@ -35,6 +36,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
             <span className="text-slate-300">{session.user.tenantName}</span>
           </div>
           <div className="flex items-center gap-4">
+            <NotificationBell />
             <HealthBadge />
             <button
               type="button"
