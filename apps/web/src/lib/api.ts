@@ -392,5 +392,11 @@ export const api = {
     readAll: () => request<{ marked: number }>("/api/notifications/read-all", { method: "POST" }),
   },
 
+  dev: {
+    // DEV ONLY — seeds demo recruiter-CRM data (404s in production).
+    seedCrm: () =>
+      request<{ seeded: boolean; message: string }>("/api/dev/seed-crm", { method: "POST" }),
+  },
+
   adminMetrics: () => request<Metrics>("/api/admin/metrics", undefined, 10_000),
 };

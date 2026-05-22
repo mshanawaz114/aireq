@@ -187,6 +187,9 @@ app.UseAuthorization();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    // DEV ONLY — demo recruiter-CRM data so the Inbox/Escalations/Follow-ups
+    // screens can be seen populated without a real Gmail reply. (AIRMVP1-408)
+    Aireq.Api.Dev.DevSeedEndpoints.MapDevSeedEndpoints(app);
 }
 
 // --- Endpoints -------------------------------------------------------------
