@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { DbStatusTile } from "@/components/db-status-tile";
 import { MetricsTile } from "@/components/metrics-tile";
+import { DevSeedButton } from "@/components/dev-seed-button";
 
 export const metadata: Metadata = { title: "Dashboard" };
 
@@ -65,6 +66,8 @@ export default function DashboardPage() {
           </li>
         </ol>
       </section>
+
+      <DevSeedButton />
     </div>
   );
 }
